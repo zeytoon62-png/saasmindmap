@@ -5,6 +5,14 @@ import { Toolbar } from "@/components/Toolbar";
 import { I18nContext } from "@/i18n/useTranslation";
 import { Language, translations, isRTL as checkRTL } from "@/i18n/translations";
 import { MindMapData } from "@/types/mindmap";
+import {
+  SaveFormat,
+  buildJSONString,
+  buildMarkdownString,
+  downloadTextFile,
+  downloadDataUrl,
+  exportPdf,
+} from "@/lib/mindmapExport";
 import { client } from "@/lib/api";
 
 const STORAGE_DATA_KEY = "personal-mind-map:data:v1";
@@ -59,6 +67,14 @@ function detectOS(): string {
   return "Other";
 }
 
+/** True when the keyboard focus is inside an editable field. */
+function isTypingTarget(target: EventTarget | null): boolean {
+  const el = target as HTMLElement | null;
+  if (!el) return false;
+  const tag = el.tagName;
+  return tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || el.isContentEditable;
+}
+
 export default function Index() {
   const [language, setLanguageState] = useState<Language>(() => readStoredLanguage());
   const t = translations[language];
@@ -72,9 +88,11 @@ export default function Index() {
     setLastCreatedNodeId,
     isModified,
     addChild,
+    addSiblingBefore,
     deleteNode,
     updateNodeText,
     updateNodeColor,
+    updateNodeFormat,
     updateNodeComment,
     updateNodeHyperlink,
     reparentNode,
@@ -208,39 +226,32 @@ export default function Index() {
     }
   }, [lastCreatedNodeId, setLastCreatedNodeId]);
 
-  const downloadJSON = useCallback(() => {
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "mindmap.json";
-    a.click();
-    URL.revokeObjectURL(url);
-    markSaved();
-    setHasUnsavedChanges(false);
-  }, [data, markSaved]);
-
-  const handleSaveAs = useCallback(async () => {
-    if ("showSaveFilePicker" in window) {
-      try {
-        const handle = await (
-          window as unknown as { showSaveFilePicker: (opts: unknown) => Promise<FileSystemFileHandle> }
-        ).showSaveFilePicker({
-          suggestedName: "mindmap.json",
-          types: [{ description: "JSON Files", accept: { "application/json": [".json"] } }],
-        });
-        const writable = await (handle as unknown as { createWritable: () => Promise<FileSystemWritableFileStream> }).createWritable();
-        await writable.write(JSON.stringify(data, null, 2));
-        await writable.close();
-        markSaved();
-        setHasUnsavedChanges(false);
-      } catch (err) {
-        if ((err as Error).name !== "AbortError") downloadJSON();
+  /** Export the current map in the format chosen from the save submenu. */
+  const handleSave = useCallback(async (format: SaveFormat) => {
+    try {
+      if (format === "json") {
+        downloadTextFile(buildJSONString(data), "mindmap.json", "application/json");
+      } else if (format === "markdown") {
+        downloadTextFile(buildMarkdownString(data), "mindmap.md", "text/markdown");
+      } else if (format === "svg") {
+        const svg = canvasHandle.current?.exportToSvgString();
+        if (!svg) return;
+        downloadTextFile(svg, "mindmap.svg", "image/svg+xml");
+      } else if (format === "png" || format === "jpg") {
+        const result = await canvasHandle.current?.exportToImage(format === "jpg" ? "jpeg" : "png");
+        if (!result) return;
+        downloadDataUrl(result.dataUrl, format === "jpg" ? "mindmap.jpg" : "mindmap.png");
+      } else if (format === "pdf") {
+        const result = await canvasHandle.current?.exportToImage("png");
+        if (!result) return;
+        await exportPdf(result.dataUrl, result.width, result.height, "mindmap.pdf");
       }
-    } else {
-      downloadJSON();
+      markSaved();
+      setHasUnsavedChanges(false);
+    } catch (err) {
+      console.error("Save failed:", err);
     }
-  }, [data, markSaved, downloadJSON]);
+  }, [data, markSaved]);
 
   const handleLoad = (loadedData: MindMapData) => {
     loadFromJSON(loadedData);
@@ -280,19 +291,36 @@ export default function Index() {
       if ((e.ctrlKey || e.metaKey) && e.key === "z" && !e.shiftKey) {
         e.preventDefault();
         undo();
+        return;
       }
       if ((e.ctrlKey || e.metaKey) && (e.key === "y" || (e.key === "z" && e.shiftKey))) {
         e.preventDefault();
         redo();
+        return;
       }
       if ((e.ctrlKey || e.metaKey) && e.key === "s") {
         e.preventDefault();
-        handleSaveAs();
+        handleSave("json");
+        return;
+      }
+
+      // Node shortcuts only apply while a node is selected and not being edited.
+      if (!selectedNodeId || editingNodeId || isTypingTarget(e.target) || e.ctrlKey || e.metaKey || e.altKey) return;
+
+      if (e.key === "Delete") {
+        e.preventDefault();
+        if (selectedNodeId !== data.root.id) deleteNode(selectedNodeId);
+      } else if (e.key === "Enter") {
+        e.preventDefault();
+        addChild(selectedNodeId);
+      } else if (e.key === "Tab") {
+        e.preventDefault();
+        addSiblingBefore(selectedNodeId);
       }
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [undo, redo, handleSaveAs]);
+  }, [undo, redo, handleSave, selectedNodeId, editingNodeId, data.root.id, deleteNode, addChild, addSiblingBefore]);
 
   useEffect(() => {
     document.documentElement.dir = isRTLDir ? "rtl" : "ltr";
@@ -331,7 +359,8 @@ export default function Index() {
             onUpdateColor={updateNodeColor}
             onUpdateComment={updateNodeComment}
             onUpdateHyperlink={updateNodeHyperlink}
-            onSaveAs={handleSaveAs}
+            onUpdateFormat={updateNodeFormat}
+            onSave={handleSave}
             onLanguageChange={handleLanguageChange}
             sidebarOpen={sidebarOpen}
             onToggleSidebar={() => setSidebarOpen((open) => !open)}

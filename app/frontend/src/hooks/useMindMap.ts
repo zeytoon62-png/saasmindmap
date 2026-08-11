@@ -1,9 +1,17 @@
 import { useState, useCallback, useRef } from "react";
-import { MindMapData, MindMapNode, createNode, createDefaultMindMap } from "@/types/mindmap";
+import {
+  MindMapData,
+  MindMapNode,
+  NodeFormatPatch,
+  createNode,
+  createDefaultMindMap,
+  getNodeDepth,
+  resolveNodeColor,
+} from "@/types/mindmap";
 
 const MAX_HISTORY = 50;
 
-export function useMindMap(newNodeText = "نود جدید", defaultMainIdea = "ایده اصلی", defaultBranch1 = "شاخه ۱", defaultBranch2 = "شاخه ۲", defaultBranch3 = "شاخه ۳") {
+export function useMindMap(newNodeText = "New Node", defaultMainIdea = "Main Idea", defaultBranch1 = "Branch 1", defaultBranch2 = "Branch 2", defaultBranch3 = "Branch 3") {
   const [data, setData] = useState<MindMapData>(() => createDefaultMindMap(defaultMainIdea, defaultBranch1, defaultBranch2, defaultBranch3));
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [lastCreatedNodeId, setLastCreatedNodeId] = useState<string | null>(null);
@@ -79,19 +87,48 @@ export function useMindMap(newNodeText = "نود جدید", defaultMainIdea = "�
     });
   }, [pushHistory]);
 
+  /** New nodes inherit the effective color of the parent they are attached to. */
   const addChild = useCallback((parentId: string) => {
-    const newNode = createNode(newNodeText);
+    const newNodeId = crypto.randomUUID();
     updateTreeWithHistory((root) => {
       const newRoot = deepClone(root);
       const parent = findNode(newRoot, parentId);
       if (parent) {
-        parent.children.push(newNode);
+        const inherited = resolveNodeColor(parent, getNodeDepth(newRoot, parentId));
+        const child = createNode(newNodeText, inherited);
+        child.id = newNodeId;
+        parent.children.push(child);
       }
       return newRoot;
     });
-    setSelectedNodeId(newNode.id);
-    setLastCreatedNodeId(newNode.id);
+    setSelectedNodeId(newNodeId);
+    setLastCreatedNodeId(newNodeId);
   }, [updateTreeWithHistory, deepClone, findNode, newNodeText]);
+
+  /** Insert a new node right before the given node, as a previous sibling. */
+  const addSiblingBefore = useCallback((nodeId: string) => {
+    if (data.root.id === nodeId) return;
+    const newNodeId = crypto.randomUUID();
+    let inserted = false;
+    updateTreeWithHistory((root) => {
+      const newRoot = deepClone(root);
+      const parent = findParent(newRoot, nodeId);
+      if (!parent) return newRoot;
+      const index = parent.children.findIndex((c) => c.id === nodeId);
+      if (index === -1) return newRoot;
+
+      const inherited = resolveNodeColor(parent, getNodeDepth(newRoot, parent.id));
+      const sibling = createNode(newNodeText, inherited);
+      sibling.id = newNodeId;
+      parent.children.splice(index, 0, sibling);
+      inserted = true;
+      return newRoot;
+    });
+    if (inserted) {
+      setSelectedNodeId(newNodeId);
+      setLastCreatedNodeId(newNodeId);
+    }
+  }, [data.root.id, updateTreeWithHistory, deepClone, findParent, newNodeText]);
 
   const deleteNode = useCallback((nodeId: string) => {
     if (data.root.id === nodeId) return;
@@ -125,6 +162,22 @@ export function useMindMap(newNodeText = "نود جدید", defaultMainIdea = "�
       const node = findNode(newRoot, nodeId);
       if (node) {
         node.color = color;
+      }
+      return newRoot;
+    });
+  }, [updateTreeWithHistory, deepClone, findNode]);
+
+  /** Apply text formatting (align, direction, list, bold, font size) to a node. */
+  const updateNodeFormat = useCallback((nodeId: string, patch: NodeFormatPatch) => {
+    updateTreeWithHistory((root) => {
+      const newRoot = deepClone(root);
+      const node = findNode(newRoot, nodeId);
+      if (node) {
+        if (patch.align !== undefined) node.align = patch.align;
+        if (patch.direction !== undefined) node.direction = patch.direction;
+        if (patch.listStyle !== undefined) node.listStyle = patch.listStyle;
+        if (patch.bold !== undefined) node.bold = patch.bold;
+        if (patch.fontSize !== undefined) node.fontSize = patch.fontSize;
       }
       return newRoot;
     });
@@ -212,9 +265,11 @@ export function useMindMap(newNodeText = "نود جدید", defaultMainIdea = "�
     setLastCreatedNodeId,
     isModified,
     addChild,
+    addSiblingBefore,
     deleteNode,
     updateNodeText,
     updateNodeColor,
+    updateNodeFormat,
     updateNodeComment,
     updateNodeHyperlink,
     reparentNode,

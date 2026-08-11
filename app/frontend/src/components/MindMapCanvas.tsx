@@ -1,5 +1,14 @@
 import { useState, useRef, useEffect, forwardRef, useImperativeHandle, useCallback } from "react";
-import { MindMapNode } from "@/types/mindmap";
+import {
+  MindMapNode,
+  NodeAlign,
+  NodeDirection,
+  NodeListStyle,
+  getNodeDepth,
+  resolveNodeColor,
+  resolveFontSize,
+} from "@/types/mindmap";
+import { EXPORT_WEBSITE } from "@/lib/mindmapExport";
 import { Maximize2, Minus, Plus, Crosshair } from "lucide-react";
 
 interface NodePosition {
@@ -10,6 +19,11 @@ interface NodePosition {
   height: number;
   lines: string[];
   iconReserve: number;
+  fontSize: number;
+  lineHeight: number;
+  align: NodeAlign;
+  direction: NodeDirection;
+  bold: boolean;
 }
 
 interface MindMapCanvasProps {
@@ -30,18 +44,24 @@ interface MindMapCanvasProps {
   onReparentNode: (nodeId: string, newParentId: string) => void;
 }
 
-export interface MindMapCanvasHandle {
-  exportToImage: () => Promise<string | null>;
+export interface ImageExportResult {
+  dataUrl: string;
+  width: number;
+  height: number;
 }
 
+export interface MindMapCanvasHandle {
+  exportToImage: (format?: "png" | "jpeg") => Promise<ImageExportResult | null>;
+  exportToSvgString: () => string | null;
+}
+
+const SVG_NS = "http://www.w3.org/2000/svg";
 const NODE_MIN_WIDTH = 64;
 const NODE_MIN_HEIGHT = 34;
 /** Halved horizontal/vertical text padding inside node boxes. */
 const NODE_PADDING_X = 7;
 const NODE_PADDING_Y = 5;
-const LINE_HEIGHT = 17;
-const CHAR_WIDTH = 8.4;
-const MAX_CHARS_PER_LINE = 20;
+const MAX_CHARS_PER_LINE = 22;
 const HORIZONTAL_GAP = 60;
 const VERTICAL_GAP = 14;
 const PLUS_BUTTON_RADIUS = 11;
@@ -51,6 +71,23 @@ const EDGE_MARGIN = 40;
 const FIT_MARGIN = 48;
 const MIN_ZOOM = 0.2;
 const MAX_ZOOM = 3;
+/** Room reserved at the bottom of exports for the website stamp. */
+const EXPORT_FOOTER_HEIGHT = 46;
+
+/** Prefix each paragraph with a list marker when a list style is active. */
+function applyListStyle(text: string, listStyle?: NodeListStyle): string {
+  if (!listStyle || listStyle === "none") return text;
+  let counter = 0;
+  return text
+    .split("\n")
+    .map((paragraph) => {
+      const trimmed = paragraph.trim();
+      if (!trimmed) return paragraph;
+      counter += 1;
+      return listStyle === "numbered" ? `${counter}. ${trimmed}` : `• ${trimmed}`;
+    })
+    .join("\n");
+}
 
 /** Wrap long labels and honour explicit line breaks entered with Shift+Enter. */
 function wrapText(text: string): string[] {
@@ -99,18 +136,46 @@ function wrapText(text: string): string[] {
   return lines.length ? lines : [""];
 }
 
-function measureNode(text: string, hasIcons: boolean) {
-  const lines = wrapText(text);
-  const longest = lines.reduce((max, line) => Math.max(max, line.length), 0);
-  const iconReserve = hasIcons ? ICON_SIZE + ICON_PAD * 2 : 0;
-  // Padding stays constant regardless of text length.
-  const width = Math.max(NODE_MIN_WIDTH, Math.round(longest * CHAR_WIDTH) + NODE_PADDING_X * 2) + iconReserve;
-  const height = Math.max(NODE_MIN_HEIGHT, lines.length * LINE_HEIGHT + NODE_PADDING_Y * 2);
-  return { lines, width, height, iconReserve };
-}
-
 function hasIcons(node: MindMapNode): boolean {
   return !!node.comment || !!node.hyperlink;
+}
+
+interface Measurement {
+  lines: string[];
+  width: number;
+  height: number;
+  iconReserve: number;
+  fontSize: number;
+  lineHeight: number;
+  align: NodeAlign;
+  direction: NodeDirection;
+  bold: boolean;
+}
+
+function measureNode(node: MindMapNode, text: string, isRoot: boolean, defaultDirection: NodeDirection): Measurement {
+  const fontSize = resolveFontSize(node, isRoot);
+  const lineHeight = Math.max(13, Math.round(fontSize * 1.45));
+  const bold = node.bold ?? isRoot;
+  const charWidth = fontSize * (bold ? 0.78 : 0.72);
+
+  const lines = wrapText(applyListStyle(text, node.listStyle));
+  const longest = lines.reduce((max, line) => Math.max(max, line.length), 0);
+  const iconReserve = hasIcons(node) ? ICON_SIZE + ICON_PAD * 2 : 0;
+
+  const width = Math.max(NODE_MIN_WIDTH, Math.round(longest * charWidth) + NODE_PADDING_X * 2) + iconReserve;
+  const height = Math.max(NODE_MIN_HEIGHT, lines.length * lineHeight + NODE_PADDING_Y * 2);
+
+  return {
+    lines,
+    width,
+    height,
+    iconReserve,
+    fontSize,
+    lineHeight,
+    align: node.align ?? "center",
+    direction: node.direction ?? defaultDirection,
+    bold,
+  };
 }
 
 function calculateLayout(
@@ -119,47 +184,34 @@ function calculateLayout(
   y: number,
   positions: NodePosition[],
   isRTL: boolean,
-  textOf: (node: MindMapNode) => string
+  textOf: (node: MindMapNode) => string,
+  depth = 0
 ): { totalHeight: number } {
-  const { lines, width, height, iconReserve } = measureNode(textOf(node), hasIcons(node));
+  const defaultDirection: NodeDirection = isRTL ? "rtl" : "ltr";
+  const measured = measureNode(node, textOf(node), depth === 0, defaultDirection);
 
   if (node.children.length === 0) {
-    positions.push({ id: node.id, x, y, width, height, lines, iconReserve });
-    return { totalHeight: height };
+    positions.push({ id: node.id, x, y, ...measured });
+    return { totalHeight: measured.height };
   }
 
   let childY = y;
   let totalChildHeight = 0;
 
   for (const child of node.children) {
-    const childWidth = measureNode(textOf(child), hasIcons(child)).width;
-    const childX = isRTL ? x - HORIZONTAL_GAP - childWidth : x + width + HORIZONTAL_GAP;
-    const { totalHeight } = calculateLayout(child, childX, childY, positions, isRTL, textOf);
+    const childWidth = measureNode(child, textOf(child), false, defaultDirection).width;
+    const childX = isRTL ? x - HORIZONTAL_GAP - childWidth : x + measured.width + HORIZONTAL_GAP;
+    const { totalHeight } = calculateLayout(child, childX, childY, positions, isRTL, textOf, depth + 1);
     totalChildHeight += totalHeight;
     childY += totalHeight + VERTICAL_GAP;
   }
 
   totalChildHeight += (node.children.length - 1) * VERTICAL_GAP;
 
-  const nodeY = y + totalChildHeight / 2 - height / 2;
-  positions.push({ id: node.id, x, y: nodeY, width, height, lines, iconReserve });
+  const nodeY = y + totalChildHeight / 2 - measured.height / 2;
+  positions.push({ id: node.id, x, y: nodeY, ...measured });
 
-  return { totalHeight: Math.max(totalChildHeight, height) };
-}
-
-function getNodeColor(node: MindMapNode, depth: number): string {
-  if (node.color) return node.color;
-  const colors = ["#2563EB", "#7C3AED", "#059669", "#D97706", "#DB2777", "#0891B2"];
-  return colors[depth % colors.length];
-}
-
-function getNodeDepth(root: MindMapNode, targetId: string, depth = 0): number {
-  if (root.id === targetId) return depth;
-  for (const child of root.children) {
-    const d = getNodeDepth(child, targetId, depth + 1);
-    if (d >= 0) return d;
-  }
-  return -1;
+  return { totalHeight: Math.max(totalChildHeight, measured.height) };
 }
 
 /** Open links directly, adding a protocol when the user omitted it. */
@@ -291,40 +343,72 @@ export const MindMapCanvas = forwardRef<MindMapCanvasHandle, MindMapCanvasProps>
       // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [editingNodeId]);
 
+    /** Detached copy of the map with an opaque background and the website stamp. */
+    const buildExportSvg = useCallback((): { clone: SVGSVGElement; width: number; height: number } | null => {
+      if (!svgRef.current) return null;
+
+      const clone = svgRef.current.cloneNode(true) as SVGSVGElement;
+      const totalWidth = contentMaxX - contentMinX + 200;
+      const totalHeight = contentMaxY - contentMinY + 160 + EXPORT_FOOTER_HEIGHT;
+
+      clone.setAttribute("xmlns", SVG_NS);
+      clone.setAttribute("width", String(totalWidth));
+      clone.setAttribute("height", String(totalHeight));
+      clone.setAttribute("viewBox", `0 0 ${totalWidth} ${totalHeight}`);
+
+      const background = clone.querySelector('rect[data-bg="true"]');
+      if (background) background.setAttribute("fill", "#F8FAFC");
+
+      const gElement = clone.querySelector("g[transform]");
+      if (gElement) {
+        gElement.setAttribute("transform", `translate(${-contentMinX + 80}, ${-contentMinY + 60})`);
+      }
+
+      clone.querySelectorAll("foreignObject").forEach((fo) => fo.remove());
+
+      // Website address stamped at the bottom of every exported image.
+      const footer = document.createElementNS(SVG_NS, "text");
+      footer.setAttribute("x", String(totalWidth / 2));
+      footer.setAttribute("y", String(totalHeight - EXPORT_FOOTER_HEIGHT / 2.6));
+      footer.setAttribute("text-anchor", "middle");
+      footer.setAttribute("font-size", "15");
+      footer.setAttribute("font-family", "Arial, Helvetica, sans-serif");
+      footer.setAttribute("fill", "#64748B");
+      footer.textContent = EXPORT_WEBSITE;
+      clone.appendChild(footer);
+
+      return { clone, width: totalWidth, height: totalHeight };
+    }, [contentMinX, contentMaxX, contentMinY, contentMaxY]);
+
     useImperativeHandle(ref, () => ({
-      exportToImage: async () => {
-        if (!svgRef.current) return null;
+      exportToSvgString: () => {
+        const built = buildExportSvg();
+        if (!built) return null;
+        return `<?xml version="1.0" encoding="UTF-8"?>\n${new XMLSerializer().serializeToString(built.clone)}`;
+      },
+      exportToImage: async (format: "png" | "jpeg" = "png") => {
+        const built = buildExportSvg();
+        if (!built) return null;
 
-        const svgClone = svgRef.current.cloneNode(true) as SVGSVGElement;
-        const totalWidth = contentMaxX - contentMinX + 200;
-        const totalHeight = contentMaxY - contentMinY + 160;
-        svgClone.setAttribute("width", String(totalWidth));
-        svgClone.setAttribute("height", String(totalHeight));
-
-        const gElement = svgClone.querySelector("g");
-        if (gElement) {
-          gElement.setAttribute("transform", `translate(${-contentMinX + 80}, ${-contentMinY + 60})`);
-        }
-
-        svgClone.querySelectorAll("foreignObject").forEach((fo) => fo.remove());
-
-        const svgString = new XMLSerializer().serializeToString(svgClone);
+        const { clone, width, height } = built;
+        const svgString = new XMLSerializer().serializeToString(clone);
         const svgBlob = new Blob([svgString], { type: "image/svg+xml;charset=utf-8" });
         const url = URL.createObjectURL(svgBlob);
 
-        return new Promise<string | null>((resolve) => {
+        return new Promise<ImageExportResult | null>((resolve) => {
           const img = new Image();
           img.onload = () => {
             const canvas = document.createElement("canvas");
-            canvas.width = totalWidth * 2;
-            canvas.height = totalHeight * 2;
+            canvas.width = width * 2;
+            canvas.height = height * 2;
             const ctx = canvas.getContext("2d");
             if (ctx) {
               ctx.scale(2, 2);
               ctx.fillStyle = "#F8FAFC";
-              ctx.fillRect(0, 0, totalWidth, totalHeight);
-              ctx.drawImage(img, 0, 0, totalWidth, totalHeight);
-              resolve(canvas.toDataURL("image/png"));
+              ctx.fillRect(0, 0, width, height);
+              ctx.drawImage(img, 0, 0, width, height);
+              const mime = format === "jpeg" ? "image/jpeg" : "image/png";
+              resolve({ dataUrl: canvas.toDataURL(mime, 0.95), width, height });
             } else {
               resolve(null);
             }
@@ -460,7 +544,7 @@ export const MindMapCanvas = forwardRef<MindMapCanvasHandle, MindMapCanvasProps>
         const midX = (startX + endX) / 2;
 
         const depth = getNodeDepth(root, child.id);
-        const color = getNodeColor(child, depth);
+        const color = resolveNodeColor(child, depth);
 
         lines.push(
           <path
@@ -545,13 +629,28 @@ export const MindMapCanvas = forwardRef<MindMapCanvasHandle, MindMapCanvasProps>
       );
     };
 
+    /** Resolve the anchor/x pair for the node's alignment and reading direction. */
+    const resolveTextAnchor = (pos: NodePosition) => {
+      const contentLeft = pos.x + (isRTLLayout ? pos.iconReserve : 0) + NODE_PADDING_X;
+      const contentRight = pos.x + pos.width - (isRTLLayout ? 0 : pos.iconReserve) - NODE_PADDING_X;
+      const rtlText = pos.direction === "rtl";
+
+      if (pos.align === "left") {
+        return { anchor: rtlText ? "end" : "start", x: contentLeft } as const;
+      }
+      if (pos.align === "right") {
+        return { anchor: rtlText ? "start" : "end", x: contentRight } as const;
+      }
+      return { anchor: "middle", x: (contentLeft + contentRight) / 2 } as const;
+    };
+
     const renderNodes = (node: MindMapNode): JSX.Element[] => {
       const elements: JSX.Element[] = [];
       const pos = findPosition(node.id);
       if (!pos) return elements;
 
       const depth = getNodeDepth(root, node.id);
-      const color = getNodeColor(node, depth);
+      const color = resolveNodeColor(node, depth);
       const isSelected = selectedNodeId === node.id;
       const isEditing = editingNodeId === node.id;
       const isRoot = depth === 0;
@@ -559,12 +658,11 @@ export const MindMapCanvas = forwardRef<MindMapCanvasHandle, MindMapCanvasProps>
       const isNearestTarget = nearestParentId === node.id && draggingNodeId !== null && isDragActive.current;
       const iconColor = isRoot ? "#FFFFFF" : color;
 
-      const textAreaLeft = isRTLLayout ? pos.x + pos.iconReserve : pos.x;
-      const textCenterX = textAreaLeft + (pos.width - pos.iconReserve) / 2;
-      const firstLineY = pos.y + pos.height / 2 - (pos.lines.length * LINE_HEIGHT) / 2 + LINE_HEIGHT / 2;
+      const { anchor, x: textX } = resolveTextAnchor(pos);
+      const firstLineY = pos.y + pos.height / 2 - (pos.lines.length * pos.lineHeight) / 2 + pos.lineHeight / 2;
 
       if (isBeingDragged) {
-        const measured = measureNode(node.text, hasIcons(node));
+        const measured = measureNode(node, node.text, isRoot, isRTLLayout ? "rtl" : "ltr");
         elements.push(
           <g key={`drag-${node.id}`} opacity={0.7}>
             <rect
@@ -582,15 +680,15 @@ export const MindMapCanvas = forwardRef<MindMapCanvasHandle, MindMapCanvasProps>
               textAnchor="middle"
               dominantBaseline="central"
               fill={color}
-              fontSize={12}
-              fontWeight={500}
-              style={{ pointerEvents: "none", userSelect: "none" }}
+              fontSize={measured.fontSize}
+              fontWeight={measured.bold ? 700 : 500}
+              style={{ pointerEvents: "none", userSelect: "none", direction: measured.direction }}
             >
               {measured.lines.map((line, index) => (
                 <tspan
                   key={index}
                   x={dragPos.x}
-                  y={dragPos.y - (measured.lines.length * LINE_HEIGHT) / 2 + LINE_HEIGHT / 2 + index * LINE_HEIGHT}
+                  y={dragPos.y - (measured.lines.length * measured.lineHeight) / 2 + measured.lineHeight / 2 + index * measured.lineHeight}
                 >
                   {line}
                 </tspan>
@@ -636,15 +734,15 @@ export const MindMapCanvas = forwardRef<MindMapCanvasHandle, MindMapCanvasProps>
             />
             {!isEditing && (
               <text
-                textAnchor="middle"
+                textAnchor={anchor}
                 dominantBaseline="central"
                 fill={isRoot ? "white" : color}
-                fontSize={isRoot ? 13 : 12}
-                fontWeight={isRoot ? 700 : 500}
-                style={{ pointerEvents: "none", userSelect: "none" }}
+                fontSize={pos.fontSize}
+                fontWeight={pos.bold ? 700 : 500}
+                style={{ pointerEvents: "none", userSelect: "none", direction: pos.direction }}
               >
                 {pos.lines.map((line, index) => (
-                  <tspan key={index} x={textCenterX} y={firstLineY + index * LINE_HEIGHT}>
+                  <tspan key={index} x={textX} y={firstLineY + index * pos.lineHeight}>
                     {line}
                   </tspan>
                 ))}
@@ -683,7 +781,7 @@ export const MindMapCanvas = forwardRef<MindMapCanvasHandle, MindMapCanvasProps>
                 }}
                 onBlur={() => onFinishEdit(node.id, editText.trim() || node.text)}
                 onClick={(e) => e.stopPropagation()}
-                dir="auto"
+                dir={pos.direction}
                 style={{
                   width: "100%",
                   height: "100%",
@@ -693,10 +791,11 @@ export const MindMapCanvas = forwardRef<MindMapCanvasHandle, MindMapCanvasProps>
                   overflow: "hidden",
                   background: isRoot ? color : "white",
                   color: isRoot ? "white" : color,
-                  fontSize: isRoot ? "13px" : "12px",
-                  lineHeight: `${LINE_HEIGHT}px`,
-                  fontWeight: isRoot ? 700 : 500,
-                  textAlign: "center",
+                  fontSize: `${pos.fontSize}px`,
+                  lineHeight: `${pos.lineHeight}px`,
+                  fontWeight: pos.bold ? 700 : 500,
+                  textAlign: pos.align,
+                  direction: pos.direction,
                   borderRadius: isRoot ? "8px" : "4px",
                   padding: `${Math.max(1, NODE_PADDING_Y - 2)}px ${Math.max(1, NODE_PADDING_X - 3)}px`,
                   boxSizing: "border-box",

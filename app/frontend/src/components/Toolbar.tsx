@@ -1,12 +1,17 @@
 import {
-  Upload, Image, Undo2, Redo2, Trash2, Palette, MessageSquare, Link2,
+  Upload, Image as ImageIcon, Undo2, Redo2, Trash2, Palette, MessageSquare, Link2,
   MessageCircle, Menu, X, FilePlus, Download, PanelLeftClose, Check,
-  ChevronDown, Globe, AlertCircle,
+  ChevronDown, Globe, AlertCircle, AlignLeft, AlignCenter, AlignRight,
+  Bold, List, ListOrdered, Type, FileJson, FileText, FileImage, FileCode2, FileDown,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useRef, useState, useEffect } from "react";
-import { MindMapData, MindMapNode } from "@/types/mindmap";
+import {
+  MindMapData, MindMapNode, NodeFormatPatch,
+  MIN_FONT_SIZE, MAX_FONT_SIZE, resolveFontSize,
+} from "@/types/mindmap";
 import { MindMapCanvasHandle } from "@/components/MindMapCanvas";
+import { SaveFormat } from "@/lib/mindmapExport";
 import { Language, getLanguageLabel } from "@/i18n/translations";
 import { useTranslation } from "@/i18n/useTranslation";
 import { client } from "@/lib/api";
@@ -26,7 +31,8 @@ interface ToolbarProps {
   onUpdateColor: (id: string, color: string) => void;
   onUpdateComment: (id: string, comment: string) => void;
   onUpdateHyperlink: (id: string, hyperlink: string) => void;
-  onSaveAs: () => void;
+  onUpdateFormat: (id: string, patch: NodeFormatPatch) => void;
+  onSave: (format: SaveFormat) => void;
   onLanguageChange: (lang: Language) => void;
   sidebarOpen: boolean;
   onToggleSidebar: () => void;
@@ -51,19 +57,21 @@ export function Toolbar({
   onUndo, onRedo, canUndo, canRedo,
   selectedNode, isRoot, hasUnsavedChanges,
   onDeleteNode, onUpdateColor,
-  onUpdateComment, onUpdateHyperlink,
-  onSaveAs, onLanguageChange,
+  onUpdateComment, onUpdateHyperlink, onUpdateFormat,
+  onSave, onLanguageChange,
   sidebarOpen, onToggleSidebar,
 }: ToolbarProps) {
   const { t, language, isRTL } = useTranslation();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [showColors, setShowColors] = useState(false);
+  const [showFormat, setShowFormat] = useState(false);
   const [showCommentInput, setShowCommentInput] = useState(false);
   const [showLinkInput, setShowLinkInput] = useState(false);
   const [commentText, setCommentText] = useState("");
   const [linkText, setLinkText] = useState("");
   const [customColor, setCustomColor] = useState("#2563EB");
   const [showFeedback, setShowFeedback] = useState(false);
+  const [showSaveFormats, setShowSaveFormats] = useState(false);
   const [feedbackText, setFeedbackText] = useState("");
   const [contactText, setContactText] = useState("");
   const [sending, setSending] = useState(false);
@@ -77,6 +85,14 @@ export function Toolbar({
     if (selectedNode?.color) setCustomColor(selectedNode.color);
   }, [selectedNode?.color]);
 
+  // Popovers must not stay open for a node that is no longer selected.
+  useEffect(() => {
+    setShowColors(false);
+    setShowFormat(false);
+    setShowCommentInput(false);
+    setShowLinkInput(false);
+  }, [selectedNode?.id]);
+
   // Close the language dropdown when clicking anywhere else.
   useEffect(() => {
     if (!langOpen) return;
@@ -86,22 +102,6 @@ export function Toolbar({
     document.addEventListener("mousedown", onDocClick);
     return () => document.removeEventListener("mousedown", onDocClick);
   }, [langOpen]);
-
-  const handleExportImage = async () => {
-    if (!canvasHandle.current) return;
-    try {
-      const dataUrl = await canvasHandle.current.exportToImage();
-      if (dataUrl) {
-        const a = document.createElement("a");
-        a.href = dataUrl;
-        a.download = "mindmap.png";
-        a.click();
-      }
-    } catch (err) {
-      console.error("Export failed:", err);
-    }
-    closeMenus();
-  };
 
   const handleLoadJSON = () => {
     fileInputRef.current?.click();
@@ -116,7 +116,7 @@ export function Toolbar({
       try {
         const parsed = JSON.parse(event.target?.result as string);
         if (parsed.root && parsed.root.id && parsed.root.text) {
-          onLoad(parsed);
+          onLoad({ root: parsed.root, version: parsed.version || "1.0" });
         } else {
           alert(t.invalidJSON);
         }
@@ -134,6 +134,7 @@ export function Toolbar({
     setShowCommentInput(true);
     setShowLinkInput(false);
     setShowColors(false);
+    setShowFormat(false);
   };
 
   const handleSaveComment = () => {
@@ -149,6 +150,7 @@ export function Toolbar({
     setShowLinkInput(true);
     setShowCommentInput(false);
     setShowColors(false);
+    setShowFormat(false);
   };
 
   const handleSaveLink = () => {
@@ -178,6 +180,11 @@ export function Toolbar({
     setFeedbackText("");
     setContactText("");
     setShowFeedback(false);
+  };
+
+  const handlePickFormat = (format: SaveFormat) => {
+    setShowSaveFormats(false);
+    onSave(format);
   };
 
   /** Language selector rendered as a dropdown menu. */
@@ -235,19 +242,11 @@ export function Toolbar({
       </button>
 
       <button
-        onClick={() => { onSaveAs(); closeMenus(); }}
+        onClick={() => { setShowSaveFormats(true); closeMenus(); }}
         className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-slate-100 active:bg-slate-200 text-sm text-slate-700 cursor-pointer transition-colors w-full text-start"
       >
         <Download className="w-4 h-4 text-slate-500" />
-        <span>{t.saveAs}</span>
-      </button>
-
-      <button
-        onClick={handleExportImage}
-        className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-slate-100 active:bg-slate-200 text-sm text-slate-700 cursor-pointer transition-colors w-full text-start"
-      >
-        <Image className="w-4 h-4 text-slate-500" />
-        <span>{t.saveImage}</span>
+        <span>{t.save}</span>
       </button>
 
       <div className="h-px bg-slate-200 my-2" />
@@ -268,6 +267,28 @@ export function Toolbar({
       </button>
     </div>
   );
+
+  const currentFontSize = selectedNode ? resolveFontSize(selectedNode, isRoot) : 12;
+  const currentAlign = selectedNode?.align ?? "center";
+  const currentDirection = selectedNode?.direction ?? (isRTL ? "rtl" : "ltr");
+  const currentList = selectedNode?.listStyle ?? "none";
+  const currentBold = selectedNode?.bold ?? isRoot;
+
+  const formatToggleClass = (active: boolean) =>
+    `h-9 w-9 flex items-center justify-center rounded-lg border cursor-pointer transition-colors ${
+      active
+        ? "border-emerald-400 bg-emerald-50 text-emerald-700"
+        : "border-slate-200 text-slate-600 hover:bg-slate-100"
+    }`;
+
+  const saveFormatOptions: { format: SaveFormat; label: string; icon: JSX.Element }[] = [
+    { format: "json", label: t.formatJson, icon: <FileJson className="w-4 h-4 text-slate-500" /> },
+    { format: "markdown", label: t.formatMarkdown, icon: <FileText className="w-4 h-4 text-slate-500" /> },
+    { format: "jpg", label: t.formatJpg, icon: <FileImage className="w-4 h-4 text-slate-500" /> },
+    { format: "png", label: t.formatPng, icon: <ImageIcon className="w-4 h-4 text-slate-500" /> },
+    { format: "svg", label: t.formatSvg, icon: <FileCode2 className="w-4 h-4 text-slate-500" /> },
+    { format: "pdf", label: t.formatPdf, icon: <FileDown className="w-4 h-4 text-slate-500" /> },
+  ];
 
   return (
     <>
@@ -353,15 +374,165 @@ export function Toolbar({
           <Redo2 className="w-4 h-4" />
         </Button>
 
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setShowSaveFormats(true)}
+          className="h-9 sm:h-8 px-2 sm:px-3 cursor-pointer hover:bg-green-50 active:bg-green-100 border-green-300 text-green-700"
+          title={t.saveFormatTitle}
+        >
+          <Download className="w-4 h-4" />
+          <span className="hidden sm:inline ml-1.5">{t.save}</span>
+        </Button>
+
         {selectedNode && (
           <>
             <div className="w-px h-6 bg-slate-300 mx-0.5" />
+
+            {/* Text formatting for the selected node's text */}
+            <div className="relative">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setShowFormat(!showFormat);
+                  setShowColors(false);
+                  setShowCommentInput(false);
+                  setShowLinkInput(false);
+                }}
+                className="h-9 w-9 sm:h-8 sm:w-auto sm:px-3 p-0 cursor-pointer hover:bg-emerald-50 active:bg-emerald-100 border-emerald-300 text-emerald-700"
+                title={t.textFormat}
+              >
+                <Type className="w-4 h-4" />
+                <span className="hidden sm:inline ml-1.5">{t.textFormat}</span>
+              </Button>
+              {showFormat && (
+                <div className="absolute top-full start-0 mt-2 bg-white rounded-xl shadow-xl border border-slate-200 p-4 z-50 w-72 max-w-[90vw]">
+                  <p className="text-xs font-semibold text-slate-500 mb-2 uppercase tracking-wide">{t.textFormat}</p>
+
+                  <div className="flex items-center gap-2 mb-3">
+                    <button
+                      className={formatToggleClass(currentAlign === "left")}
+                      title={t.alignLeft}
+                      aria-label={t.alignLeft}
+                      onClick={() => onUpdateFormat(selectedNode.id, { align: "left" })}
+                    >
+                      <AlignLeft className="w-4 h-4" />
+                    </button>
+                    <button
+                      className={formatToggleClass(currentAlign === "center")}
+                      title={t.alignCenter}
+                      aria-label={t.alignCenter}
+                      onClick={() => onUpdateFormat(selectedNode.id, { align: "center" })}
+                    >
+                      <AlignCenter className="w-4 h-4" />
+                    </button>
+                    <button
+                      className={formatToggleClass(currentAlign === "right")}
+                      title={t.alignRight}
+                      aria-label={t.alignRight}
+                      onClick={() => onUpdateFormat(selectedNode.id, { align: "right" })}
+                    >
+                      <AlignRight className="w-4 h-4" />
+                    </button>
+                    <div className="w-px h-7 bg-slate-200 mx-0.5" />
+                    <button
+                      className={formatToggleClass(currentBold)}
+                      title={t.boldText}
+                      aria-label={t.boldText}
+                      onClick={() => onUpdateFormat(selectedNode.id, { bold: !currentBold })}
+                    >
+                      <Bold className="w-4 h-4" />
+                    </button>
+                  </div>
+
+                  <div className="flex items-center gap-2 mb-3">
+                    <button
+                      className={formatToggleClass(currentDirection === "ltr")}
+                      title={t.directionLtr}
+                      aria-label={t.directionLtr}
+                      onClick={() => onUpdateFormat(selectedNode.id, { direction: "ltr" })}
+                    >
+                      <span className="text-[11px] font-bold tracking-tight select-none">LTR</span>
+                    </button>
+                    <button
+                      className={formatToggleClass(currentDirection === "rtl")}
+                      title={t.directionRtl}
+                      aria-label={t.directionRtl}
+                      onClick={() => onUpdateFormat(selectedNode.id, { direction: "rtl" })}
+                    >
+                      <span className="text-[11px] font-bold tracking-tight select-none">RTL</span>
+                    </button>
+                    <div className="w-px h-7 bg-slate-200 mx-0.5" />
+                    <button
+                      className={formatToggleClass(currentList === "numbered")}
+                      title={t.numberedList}
+                      aria-label={t.numberedList}
+                      onClick={() =>
+                        onUpdateFormat(selectedNode.id, { listStyle: currentList === "numbered" ? "none" : "numbered" })
+                      }
+                    >
+                      <ListOrdered className="w-4 h-4" />
+                    </button>
+                    <button
+                      className={formatToggleClass(currentList === "bulleted")}
+                      title={t.bulletedList}
+                      aria-label={t.bulletedList}
+                      onClick={() =>
+                        onUpdateFormat(selectedNode.id, { listStyle: currentList === "bulleted" ? "none" : "bulleted" })
+                      }
+                    >
+                      <List className="w-4 h-4" />
+                    </button>
+                  </div>
+
+                  <div className="h-px bg-slate-200 my-3" />
+
+                  <p className="text-xs font-semibold text-slate-500 mb-2 uppercase tracking-wide">{t.fontSizeLabel}</p>
+                  <div className="flex items-center gap-3">
+                    <button
+                      className="h-9 w-9 flex items-center justify-center rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-100 cursor-pointer disabled:opacity-40"
+                      title={t.decreaseFontSize}
+                      aria-label={t.decreaseFontSize}
+                      disabled={currentFontSize <= MIN_FONT_SIZE}
+                      onClick={() => onUpdateFormat(selectedNode.id, { fontSize: Math.max(MIN_FONT_SIZE, currentFontSize - 1) })}
+                    >
+                      <Minus4 />
+                    </button>
+                    <input
+                      type="range"
+                      min={MIN_FONT_SIZE}
+                      max={MAX_FONT_SIZE}
+                      value={currentFontSize}
+                      onChange={(e) => onUpdateFormat(selectedNode.id, { fontSize: Number(e.target.value) })}
+                      className="flex-1 cursor-pointer accent-emerald-600"
+                      aria-label={t.fontSizeLabel}
+                    />
+                    <button
+                      className="h-9 w-9 flex items-center justify-center rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-100 cursor-pointer disabled:opacity-40"
+                      title={t.increaseFontSize}
+                      aria-label={t.increaseFontSize}
+                      disabled={currentFontSize >= MAX_FONT_SIZE}
+                      onClick={() => onUpdateFormat(selectedNode.id, { fontSize: Math.min(MAX_FONT_SIZE, currentFontSize + 1) })}
+                    >
+                      <Plus4 />
+                    </button>
+                    <span className="text-sm font-mono text-slate-600 w-8 text-center">{currentFontSize}</span>
+                  </div>
+                </div>
+              )}
+            </div>
 
             <div className="relative">
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => { setShowColors(!showColors); setShowCommentInput(false); setShowLinkInput(false); }}
+                onClick={() => {
+                  setShowColors(!showColors);
+                  setShowFormat(false);
+                  setShowCommentInput(false);
+                  setShowLinkInput(false);
+                }}
                 className="h-9 w-9 sm:h-8 sm:w-auto sm:px-3 p-0 cursor-pointer hover:bg-purple-50 active:bg-purple-100 border-purple-300 text-purple-600"
                 title={t.colorTooltip}
               >
@@ -523,9 +694,37 @@ export function Toolbar({
         )}
 
         <div className="text-xs text-slate-500 hidden xl:block">
-          {t.helpText}
+          {selectedNode ? t.shortcutHints : t.helpText}
         </div>
       </div>
+
+      {/* Save format submenu */}
+      {showSaveFormats && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/30" onClick={() => setShowSaveFormats(false)} />
+          <div className="relative bg-white rounded-xl shadow-xl p-5 w-80 max-w-full">
+            <p className="text-sm font-semibold mb-1">{t.saveFormatTitle}</p>
+            <p className="text-xs text-slate-500 mb-3">{t.saveFormatMessage}</p>
+            <div className="flex flex-col gap-1">
+              {saveFormatOptions.map((option) => (
+                <button
+                  key={option.format}
+                  onClick={() => handlePickFormat(option.format)}
+                  className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-slate-100 active:bg-slate-200 text-sm text-slate-700 cursor-pointer transition-colors w-full text-start"
+                >
+                  {option.icon}
+                  <span>{option.label}</span>
+                </button>
+              ))}
+            </div>
+            <div className="flex justify-end mt-4">
+              <Button variant="outline" size="sm" onClick={() => setShowSaveFormats(false)} className="cursor-pointer">
+                {t.cancelButton}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Feedback dialog */}
       {showFeedback && (
@@ -572,4 +771,13 @@ export function Toolbar({
       />
     </>
   );
+}
+
+/** Small local glyphs so font-size steppers stay visually compact. */
+function Minus4() {
+  return <span className="text-lg leading-none font-semibold select-none">−</span>;
+}
+
+function Plus4() {
+  return <span className="text-lg leading-none font-semibold select-none">+</span>;
 }
