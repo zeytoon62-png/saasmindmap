@@ -1,0 +1,520 @@
+export type Language = "en" | "es" | "fa" | "ar" | "zh" | "ru";
+
+export interface Translations {
+  // General
+  appTitle: string;
+  // Toolbar
+  undo: string;
+  redo: string;
+  load: string;
+  save: string;
+  saveAs: string;
+  saveImage: string;
+  newFile: string;
+  exportImage: string;
+  reset: string;
+  edit: string;
+  color: string;
+  delete: string;
+  autoSave: string;
+  autoSaveOn: string;
+  autoSaveOff: string;
+  language: string;
+  feedback: string;
+  menu: string;
+  // Node actions
+  comment: string;
+  hyperlink: string;
+  addComment: string;
+  addHyperlink: string;
+  editComment: string;
+  editHyperlink: string;
+  commentPlaceholder: string;
+  hyperlinkPlaceholder: string;
+  // Tooltips
+  undoTooltip: string;
+  redoTooltip: string;
+  loadTooltip: string;
+  saveTooltip: string;
+  saveAsTooltip: string;
+  exportImageTooltip: string;
+  resetTooltip: string;
+  editTooltip: string;
+  colorTooltip: string;
+  deleteTooltip: string;
+  feedbackTooltip: string;
+  // Zoom controls
+  zoomIn: string;
+  zoomOut: string;
+  resetView: string;
+  fitToScreen: string;
+  // Colors
+  presetColors: string;
+  customColor: string;
+  applyButton: string;
+  // Sidebar
+  collapseSidebar: string;
+  expandSidebar: string;
+  // Messages
+  invalidJSON: string;
+  jsonReadError: string;
+  helpText: string;
+  autoSaveLocationPrompt: string;
+  unsavedWarning: string;
+  // Default mind map
+  mainIdea: string;
+  branch1: string;
+  branch2: string;
+  branch3: string;
+  newNode: string;
+  // Dialogs
+  saveDialogTitle: string;
+  saveDialogMessage: string;
+  saveButton: string;
+  cancelButton: string;
+  okButton: string;
+  feedbackTitle: string;
+  feedbackMessage: string;
+  feedbackPlaceholder: string;
+  sendButton: string;
+  contactLabel: string;
+  contactPlaceholder: string;
+}
+
+export const translations: Record<Language, Translations> = {
+  en: {
+    appTitle: "Personal Mind Map",
+    undo: "Undo",
+    redo: "Redo",
+    load: "Load",
+    save: "Save",
+    saveAs: "Save As",
+    saveImage: "Save Image",
+    newFile: "New",
+    exportImage: "Image",
+    reset: "Reset",
+    edit: "Edit",
+    color: "Color",
+    delete: "Delete",
+    autoSave: "Auto Save",
+    autoSaveOn: "Auto Save: On",
+    autoSaveOff: "Auto Save: Off",
+    language: "Language",
+    feedback: "Feedback",
+    menu: "Menu",
+    comment: "Comment",
+    hyperlink: "Link",
+    addComment: "Add Comment",
+    addHyperlink: "Add Link",
+    editComment: "Edit Comment",
+    editHyperlink: "Edit Link",
+    commentPlaceholder: "Enter comment text...",
+    hyperlinkPlaceholder: "Enter link URL...",
+    undoTooltip: "Undo (Ctrl+Z)",
+    redoTooltip: "Redo (Ctrl+Y)",
+    loadTooltip: "Load JSON",
+    saveTooltip: "Save JSON",
+    saveAsTooltip: "Save as new file",
+    exportImageTooltip: "Export Image",
+    resetTooltip: "Reset",
+    editTooltip: "Edit Text",
+    colorTooltip: "Change Color",
+    deleteTooltip: "Delete Node",
+    feedbackTooltip: "Send feedback and report issues",
+    zoomIn: "Zoom in",
+    zoomOut: "Zoom out",
+    resetView: "Reset view (100%)",
+    fitToScreen: "Fit whole map to screen",
+    presetColors: "Preset colors",
+    customColor: "Custom color",
+    applyButton: "Apply",
+    collapseSidebar: "Collapse menu",
+    expandSidebar: "Expand menu",
+    invalidJSON: "Invalid JSON file. Mind map structure not found.",
+    jsonReadError: "Error reading JSON file",
+    helpText: "Click: Select • Double-click: Edit • Shift+Enter: New line • Drag: Reparent",
+    autoSaveLocationPrompt: "Please choose a location for auto-save files.",
+    unsavedWarning: "Unsaved changes",
+    mainIdea: "Main Idea",
+    branch1: "Branch 1",
+    branch2: "Branch 2",
+    branch3: "Branch 3",
+    newNode: "New Node",
+    saveDialogTitle: "Save Project",
+    saveDialogMessage: "Please choose a location to save the file.",
+    saveButton: "Save",
+    cancelButton: "Cancel",
+    okButton: "OK",
+    feedbackTitle: "Send Feedback",
+    feedbackMessage: "Write your comments, suggestions, or issues:",
+    feedbackPlaceholder: "Feedback text...",
+    sendButton: "Send",
+    contactLabel: "Contact info (optional)",
+    contactPlaceholder: "Email or phone number...",
+  },
+  es: {
+    appTitle: "Mapa Mental Personal",
+    undo: "Deshacer",
+    redo: "Rehacer",
+    load: "Cargar",
+    save: "Guardar",
+    saveAs: "Guardar como",
+    saveImage: "Guardar imagen",
+    newFile: "Nuevo",
+    exportImage: "Imagen",
+    reset: "Reiniciar",
+    edit: "Editar",
+    color: "Color",
+    delete: "Eliminar",
+    autoSave: "Guardado automático",
+    autoSaveOn: "Guardado auto: Activado",
+    autoSaveOff: "Guardado auto: Desactivado",
+    language: "Idioma",
+    feedback: "Comentarios",
+    menu: "Menú",
+    comment: "Nota",
+    hyperlink: "Enlace",
+    addComment: "Agregar nota",
+    addHyperlink: "Agregar enlace",
+    editComment: "Editar nota",
+    editHyperlink: "Editar enlace",
+    commentPlaceholder: "Ingrese el texto de la nota...",
+    hyperlinkPlaceholder: "Ingrese la URL del enlace...",
+    undoTooltip: "Deshacer (Ctrl+Z)",
+    redoTooltip: "Rehacer (Ctrl+Y)",
+    loadTooltip: "Cargar JSON",
+    saveTooltip: "Guardar JSON",
+    saveAsTooltip: "Guardar como archivo nuevo",
+    exportImageTooltip: "Exportar imagen",
+    resetTooltip: "Reiniciar",
+    editTooltip: "Editar texto",
+    colorTooltip: "Cambiar color",
+    deleteTooltip: "Eliminar nodo",
+    feedbackTooltip: "Enviar comentarios y reportar problemas",
+    zoomIn: "Acercar",
+    zoomOut: "Alejar",
+    resetView: "Restablecer vista (100%)",
+    fitToScreen: "Ajustar todo el mapa a la pantalla",
+    presetColors: "Colores predefinidos",
+    customColor: "Color personalizado",
+    applyButton: "Aplicar",
+    collapseSidebar: "Contraer menú",
+    expandSidebar: "Expandir menú",
+    invalidJSON: "Archivo JSON no válido. No se encontró la estructura del mapa mental.",
+    jsonReadError: "Error al leer el archivo JSON",
+    helpText: "Clic: Seleccionar • Doble clic: Editar • Shift+Enter: Nueva línea • Arrastrar: Mover",
+    autoSaveLocationPrompt: "Por favor elija una ubicación para los archivos de guardado automático.",
+    unsavedWarning: "Cambios sin guardar",
+    mainIdea: "Idea Principal",
+    branch1: "Rama 1",
+    branch2: "Rama 2",
+    branch3: "Rama 3",
+    newNode: "Nuevo Nodo",
+    saveDialogTitle: "Guardar Proyecto",
+    saveDialogMessage: "Por favor elija una ubicación para guardar el archivo.",
+    saveButton: "Guardar",
+    cancelButton: "Cancelar",
+    okButton: "Aceptar",
+    feedbackTitle: "Enviar Comentarios",
+    feedbackMessage: "Escriba sus comentarios, sugerencias o problemas:",
+    feedbackPlaceholder: "Texto de comentarios...",
+    sendButton: "Enviar",
+    contactLabel: "Datos de contacto (opcional)",
+    contactPlaceholder: "Correo o teléfono...",
+  },
+  fa: {
+    appTitle: "نقشه ذهنی شخصی",
+    undo: "بازگشت",
+    redo: "از نو",
+    load: "بارگذاری",
+    save: "ذخیره",
+    saveAs: "ذخیره جدید",
+    saveImage: "ذخیره تصویر",
+    newFile: "جدید",
+    exportImage: "تصویر",
+    reset: "ریست",
+    edit: "ویرایش",
+    color: "رنگ",
+    delete: "حذف",
+    autoSave: "ذخیره خودکار",
+    autoSaveOn: "ذخیره خودکار: روشن",
+    autoSaveOff: "ذخیره خودکار: خاموش",
+    language: "زبان",
+    feedback: "بازخورد",
+    menu: "منو",
+    comment: "یادداشت",
+    hyperlink: "لینک",
+    addComment: "افزودن یادداشت",
+    addHyperlink: "افزودن لینک",
+    editComment: "ویرایش یادداشت",
+    editHyperlink: "ویرایش لینک",
+    commentPlaceholder: "متن یادداشت را وارد کنید...",
+    hyperlinkPlaceholder: "آدرس لینک را وارد کنید...",
+    undoTooltip: "بازگشت (Ctrl+Z)",
+    redoTooltip: "از نو (Ctrl+Y)",
+    loadTooltip: "بارگذاری JSON",
+    saveTooltip: "ذخیره JSON",
+    saveAsTooltip: "ذخیره به عنوان فایل جدید",
+    exportImageTooltip: "خروجی تصویر",
+    resetTooltip: "شروع مجدد",
+    editTooltip: "ویرایش متن",
+    colorTooltip: "تغییر رنگ",
+    deleteTooltip: "حذف نود",
+    feedbackTooltip: "ارسال نظرات و ایرادات",
+    zoomIn: "بزرگ‌نمایی",
+    zoomOut: "کوچک‌نمایی",
+    resetView: "بازنشانی نما (۱۰۰٪)",
+    fitToScreen: "جا دادن کل نقشه در صفحه",
+    presetColors: "رنگ‌های آماده",
+    customColor: "رنگ دلخواه",
+    applyButton: "اعمال",
+    collapseSidebar: "بستن منو",
+    expandSidebar: "باز کردن منو",
+    invalidJSON: "فایل JSON معتبر نیست. ساختار مایندمپ یافت نشد.",
+    jsonReadError: "خطا در خواندن فایل JSON",
+    helpText: "کلیک: انتخاب • دابل‌کلیک: ویرایش • Shift+Enter: خط جدید • درگ: جابه‌جایی",
+    autoSaveLocationPrompt: "لطفاً محل ذخیره فایل‌های خودکار را انتخاب کنید.",
+    unsavedWarning: "تغییرات ذخیره نشده",
+    mainIdea: "ایده اصلی",
+    branch1: "شاخه ۱",
+    branch2: "شاخه ۲",
+    branch3: "شاخه ۳",
+    newNode: "نود جدید",
+    saveDialogTitle: "ذخیره پروژه",
+    saveDialogMessage: "لطفاً محل ذخیره فایل را انتخاب کنید.",
+    saveButton: "ذخیره",
+    cancelButton: "انصراف",
+    okButton: "تأیید",
+    feedbackTitle: "ارسال بازخورد",
+    feedbackMessage: "نظرات، پیشنهادات یا ایرادات خود را بنویسید:",
+    feedbackPlaceholder: "متن بازخورد...",
+    sendButton: "ارسال",
+    contactLabel: "راه ارتباطی (اختیاری)",
+    contactPlaceholder: "ایمیل یا شماره تماس...",
+  },
+  ar: {
+    appTitle: "الخريطة الذهنية الشخصية",
+    undo: "تراجع",
+    redo: "إعادة",
+    load: "تحميل",
+    save: "حفظ",
+    saveAs: "حفظ باسم",
+    saveImage: "حفظ صورة",
+    newFile: "جديد",
+    exportImage: "صورة",
+    reset: "إعادة تعيين",
+    edit: "تحرير",
+    color: "لون",
+    delete: "حذف",
+    autoSave: "حفظ تلقائي",
+    autoSaveOn: "الحفظ التلقائي: مفعّل",
+    autoSaveOff: "الحفظ التلقائي: معطّل",
+    language: "اللغة",
+    feedback: "ملاحظات",
+    menu: "القائمة",
+    comment: "ملاحظة",
+    hyperlink: "رابط",
+    addComment: "إضافة ملاحظة",
+    addHyperlink: "إضافة رابط",
+    editComment: "تحرير الملاحظة",
+    editHyperlink: "تحرير الرابط",
+    commentPlaceholder: "أدخل نص الملاحظة...",
+    hyperlinkPlaceholder: "أدخل عنوان الرابط...",
+    undoTooltip: "تراجع (Ctrl+Z)",
+    redoTooltip: "إعادة (Ctrl+Y)",
+    loadTooltip: "تحميل JSON",
+    saveTooltip: "حفظ JSON",
+    saveAsTooltip: "حفظ كملف جديد",
+    exportImageTooltip: "تصدير صورة",
+    resetTooltip: "إعادة تعيين",
+    editTooltip: "تحرير النص",
+    colorTooltip: "تغيير اللون",
+    deleteTooltip: "حذف العقدة",
+    feedbackTooltip: "إرسال الملاحظات والمشاكل",
+    zoomIn: "تكبير",
+    zoomOut: "تصغير",
+    resetView: "إعادة ضبط العرض (100%)",
+    fitToScreen: "ملاءمة الخريطة بالكامل للشاشة",
+    presetColors: "ألوان جاهزة",
+    customColor: "لون مخصص",
+    applyButton: "تطبيق",
+    collapseSidebar: "طي القائمة",
+    expandSidebar: "توسيع القائمة",
+    invalidJSON: "ملف JSON غير صالح. لم يتم العثور على بنية الخريطة الذهنية.",
+    jsonReadError: "خطأ في قراءة ملف JSON",
+    helpText: "نقر: تحديد • نقر مزدوج: تحرير • Shift+Enter: سطر جديد • سحب: نقل",
+    autoSaveLocationPrompt: "يرجى اختيار مكان حفظ الملفات التلقائية.",
+    unsavedWarning: "تغييرات غير محفوظة",
+    mainIdea: "الفكرة الرئيسية",
+    branch1: "الفرع ١",
+    branch2: "الفرع ٢",
+    branch3: "الفرع ٣",
+    newNode: "عقدة جديدة",
+    saveDialogTitle: "حفظ المشروع",
+    saveDialogMessage: "يرجى اختيار مكان حفظ الملف.",
+    saveButton: "حفظ",
+    cancelButton: "إلغاء",
+    okButton: "موافق",
+    feedbackTitle: "إرسال ملاحظات",
+    feedbackMessage: "اكتب ملاحظاتك أو اقتراحاتك أو المشاكل:",
+    feedbackPlaceholder: "نص الملاحظات...",
+    sendButton: "إرسال",
+    contactLabel: "وسيلة التواصل (اختياري)",
+    contactPlaceholder: "البريد الإلكتروني أو رقم الهاتف...",
+  },
+  zh: {
+    appTitle: "个人思维导图",
+    undo: "撤销",
+    redo: "重做",
+    load: "载入",
+    save: "保存",
+    saveAs: "另存为",
+    saveImage: "保存图片",
+    newFile: "新建",
+    exportImage: "图片",
+    reset: "重置",
+    edit: "编辑",
+    color: "颜色",
+    delete: "删除",
+    autoSave: "自动保存",
+    autoSaveOn: "自动保存：开",
+    autoSaveOff: "自动保存：关",
+    language: "语言",
+    feedback: "反馈",
+    menu: "菜单",
+    comment: "备注",
+    hyperlink: "链接",
+    addComment: "添加备注",
+    addHyperlink: "添加链接",
+    editComment: "编辑备注",
+    editHyperlink: "编辑链接",
+    commentPlaceholder: "请输入备注内容...",
+    hyperlinkPlaceholder: "请输入链接地址...",
+    undoTooltip: "撤销 (Ctrl+Z)",
+    redoTooltip: "重做 (Ctrl+Y)",
+    loadTooltip: "载入 JSON",
+    saveTooltip: "保存 JSON",
+    saveAsTooltip: "另存为新文件",
+    exportImageTooltip: "导出图片",
+    resetTooltip: "重置",
+    editTooltip: "编辑文字",
+    colorTooltip: "更改颜色",
+    deleteTooltip: "删除节点",
+    feedbackTooltip: "发送反馈并报告问题",
+    zoomIn: "放大",
+    zoomOut: "缩小",
+    resetView: "重置视图（100%）",
+    fitToScreen: "适应屏幕显示整张导图",
+    presetColors: "预设颜色",
+    customColor: "自定义颜色",
+    applyButton: "应用",
+    collapseSidebar: "收起菜单",
+    expandSidebar: "展开菜单",
+    invalidJSON: "JSON 文件无效，未找到思维导图结构。",
+    jsonReadError: "读取 JSON 文件出错",
+    helpText: "单击：选择 • 双击：编辑 • Shift+Enter：换行 • 拖动：更改父节点",
+    autoSaveLocationPrompt: "请选择自动保存文件的位置。",
+    unsavedWarning: "有未保存的更改",
+    mainIdea: "核心主题",
+    branch1: "分支 1",
+    branch2: "分支 2",
+    branch3: "分支 3",
+    newNode: "新节点",
+    saveDialogTitle: "保存项目",
+    saveDialogMessage: "请选择保存文件的位置。",
+    saveButton: "保存",
+    cancelButton: "取消",
+    okButton: "确定",
+    feedbackTitle: "发送反馈",
+    feedbackMessage: "请写下您的意见、建议或问题：",
+    feedbackPlaceholder: "反馈内容...",
+    sendButton: "发送",
+    contactLabel: "联系方式（可选）",
+    contactPlaceholder: "邮箱或电话号码...",
+  },
+  ru: {
+    appTitle: "Личная интеллект-карта",
+    undo: "Отменить",
+    redo: "Повторить",
+    load: "Загрузить",
+    save: "Сохранить",
+    saveAs: "Сохранить как",
+    saveImage: "Сохранить изображение",
+    newFile: "Новый",
+    exportImage: "Изображение",
+    reset: "Сброс",
+    edit: "Изменить",
+    color: "Цвет",
+    delete: "Удалить",
+    autoSave: "Автосохранение",
+    autoSaveOn: "Автосохранение: вкл",
+    autoSaveOff: "Автосохранение: выкл",
+    language: "Язык",
+    feedback: "Отзыв",
+    menu: "Меню",
+    comment: "Заметка",
+    hyperlink: "Ссылка",
+    addComment: "Добавить заметку",
+    addHyperlink: "Добавить ссылку",
+    editComment: "Изменить заметку",
+    editHyperlink: "Изменить ссылку",
+    commentPlaceholder: "Введите текст заметки...",
+    hyperlinkPlaceholder: "Введите адрес ссылки...",
+    undoTooltip: "Отменить (Ctrl+Z)",
+    redoTooltip: "Повторить (Ctrl+Y)",
+    loadTooltip: "Загрузить JSON",
+    saveTooltip: "Сохранить JSON",
+    saveAsTooltip: "Сохранить как новый файл",
+    exportImageTooltip: "Экспорт изображения",
+    resetTooltip: "Сброс",
+    editTooltip: "Изменить текст",
+    colorTooltip: "Изменить цвет",
+    deleteTooltip: "Удалить узел",
+    feedbackTooltip: "Отправить отзыв и сообщить о проблемах",
+    zoomIn: "Увеличить",
+    zoomOut: "Уменьшить",
+    resetView: "Сбросить вид (100%)",
+    fitToScreen: "Вписать всю карту в экран",
+    presetColors: "Готовые цвета",
+    customColor: "Свой цвет",
+    applyButton: "Применить",
+    collapseSidebar: "Свернуть меню",
+    expandSidebar: "Развернуть меню",
+    invalidJSON: "Некорректный файл JSON. Структура карты не найдена.",
+    jsonReadError: "Ошибка чтения файла JSON",
+    helpText: "Клик: выбрать • Двойной клик: изменить • Shift+Enter: новая строка • Перетаскивание: сменить родителя",
+    autoSaveLocationPrompt: "Выберите место для файлов автосохранения.",
+    unsavedWarning: "Несохранённые изменения",
+    mainIdea: "Главная идея",
+    branch1: "Ветвь 1",
+    branch2: "Ветвь 2",
+    branch3: "Ветвь 3",
+    newNode: "Новый узел",
+    saveDialogTitle: "Сохранить проект",
+    saveDialogMessage: "Выберите место для сохранения файла.",
+    saveButton: "Сохранить",
+    cancelButton: "Отмена",
+    okButton: "ОК",
+    feedbackTitle: "Отправить отзыв",
+    feedbackMessage: "Напишите свои замечания, предложения или проблемы:",
+    feedbackPlaceholder: "Текст отзыва...",
+    sendButton: "Отправить",
+    contactLabel: "Контакт (необязательно)",
+    contactPlaceholder: "Email или телефон...",
+  },
+};
+
+export function isRTL(lang: Language): boolean {
+  return lang === "fa" || lang === "ar";
+}
+
+export function getLanguageLabel(lang: Language): string {
+  switch (lang) {
+    case "en": return "English";
+    case "es": return "Español";
+    case "fa": return "فارسی";
+    case "ar": return "العربية";
+    case "zh": return "中文";
+    case "ru": return "Русский";
+  }
+}

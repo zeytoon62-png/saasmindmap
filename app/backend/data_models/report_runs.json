@@ -1,0 +1,25 @@
+{
+    "title": "report_runs",
+    "type": "object",
+    "properties": {
+        "id": {
+            "type": "integer",
+            "description": "Auto-increment primary key"
+        },
+        "run_type": {
+            "type": "string",
+            "description": "Type of report run, e.g. weekly_email"
+        },
+        "status": {
+            "type": "string",
+            "description": "Result status: sent / failed / empty"
+        },
+        "detail": {
+            "type": "string",
+            "description": "Short detail about the run"
+        }
+    },
+    "required": [
+        "run_type"
+    ]
+}
