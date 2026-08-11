@@ -1,0 +1,40 @@
+name: Deploy to Production
+
+on:
+  push:
+    branches: [ main ]  # ??? ???? ??? master ???? ?? ?? ?? master ????? ????
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '20'
+
+      - name: Build Frontend
+        run: |
+          cd app/frontend
+          npm install
+          npm run build
+
+      - name: Deploy to Server via SSH
+        uses: appleboy/ssh-action@v0.1.5
+        with:
+          host: 202.133.88.106
+          username: deploy
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            cd /home/deploy/mindmap
+            git pull origin main
+            cd app/backend
+            source venv/bin/activate
+            pip install -r requirements.txt
+            export DATABASE_URL=postgresql+asyncpg://deploy:Ebkh%4089215110@localhost:5432/mindmap
+            sudo systemctl restart mindmap.service
+            cd /home/deploy/mindmap/app/frontend
+            # build ????? ??? ??????? ????? ???? ???????? ????? ?? build ???? ??? ???? ????
