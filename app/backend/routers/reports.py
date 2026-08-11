@@ -33,6 +33,13 @@ class SuccessResponse(BaseModel):
     message: str = ""
 
 
+class WeeklyRunResponse(BaseModel):
+    success: bool
+    sent: bool
+    skipped: bool
+    message: str = ""
+
+
 @router.post("/feedback", response_model=SuccessResponse)
 async def submit_feedback(
     data: FeedbackRequest,
@@ -89,18 +96,36 @@ async def log_visitor(
         raise HTTPException(status_code=500, detail="Failed to log visitor")
 
 
+@router.post("/run-weekly-report", response_model=WeeklyRunResponse)
+async def run_weekly_report(
+    db: AsyncSession = Depends(get_db),
+):
+    """Send the weekly email only when a full week has passed since the last send."""
+    try:
+        service = WeeklyReportService(db)
+        result = await service.run_weekly_if_due()
+        return WeeklyRunResponse(
+            success=True,
+            sent=bool(result.get("sent")),
+            skipped=bool(result.get("skipped")),
+            message=str(result.get("message", "")),
+        )
+    except Exception as e:
+        logger.error(f"Weekly report run error: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to run weekly report: {str(e)}")
+
+
 @router.post("/send-weekly-report", response_model=SuccessResponse)
 async def send_weekly_report(
     db: AsyncSession = Depends(get_db),
 ):
-    """Send weekly report email and clear data - called by scheduler"""
+    """Force-send the weekly report immediately, ignoring the schedule."""
     try:
         service = WeeklyReportService(db)
         success = await service.send_weekly_report()
         if success:
             return SuccessResponse(success=True, message="Weekly report sent and data cleared")
-        else:
-            return SuccessResponse(success=False, message="Failed to send email, data preserved")
+        return SuccessResponse(success=False, message="Failed to send email, data preserved")
     except Exception as e:
         logger.error(f"Weekly report error: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to send weekly report: {str(e)}")

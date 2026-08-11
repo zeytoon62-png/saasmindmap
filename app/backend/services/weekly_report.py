@@ -1,19 +1,22 @@
+import asyncio
 import logging
 import os
 import smtplib
-import json
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from datetime import datetime
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
 from sqlalchemy import select, delete
 from sqlalchemy.ext.asyncio import AsyncSession
 from models.feedbacks import Feedbacks
 from models.visitor_logs import Visitor_logs
+from models.report_runs import Report_runs
 
 logger = logging.getLogger(__name__)
 
 REPORT_EMAIL = "ebkhmobile@gmail.com"
+RUN_TYPE_WEEKLY = "weekly_email"
+WEEK_SECONDS = 7 * 24 * 60 * 60
 
 
 class WeeklyReportService:
@@ -99,6 +102,48 @@ class WeeklyReportService:
             logger.error(f"Failed to send email: {e}")
             return False
 
+    async def seconds_since_last_run(self) -> Optional[float]:
+        """Seconds elapsed since the last weekly email attempt that was sent."""
+        result = await self.db.execute(
+            select(Report_runs)
+            .where(Report_runs.run_type == RUN_TYPE_WEEKLY)
+            .where(Report_runs.status == "sent")
+            .order_by(Report_runs.created_at.desc())
+            .limit(1)
+        )
+        last_run = result.scalars().first()
+        if last_run is None or last_run.created_at is None:
+            return None
+        last_time = last_run.created_at
+        if last_time.tzinfo is not None:
+            last_time = last_time.replace(tzinfo=None)
+        return (datetime.utcnow() - last_time).total_seconds()
+
+    async def record_run(self, status: str, detail: str):
+        """Persist the outcome of a weekly report run."""
+        self.db.add(Report_runs(run_type=RUN_TYPE_WEEKLY, status=status, detail=detail[:500]))
+        await self.db.commit()
+
+    async def run_weekly_if_due(self) -> Dict[str, Any]:
+        """Send the weekly report only when a full week has passed since the last send."""
+        elapsed = await self.seconds_since_last_run()
+        if elapsed is not None and elapsed < WEEK_SECONDS:
+            remaining_hours = round((WEEK_SECONDS - elapsed) / 3600, 1)
+            await self.db.commit()
+            return {
+                "sent": False,
+                "skipped": True,
+                "message": f"Next weekly report is due in {remaining_hours} hours",
+            }
+        await self.db.commit()
+
+        sent = await self.send_weekly_report()
+        return {
+            "sent": sent,
+            "skipped": False,
+            "message": "Weekly report sent" if sent else "Weekly report could not be sent",
+        }
+
     async def send_weekly_report(self) -> bool:
         """Compile and send weekly report, then clear data"""
         feedbacks = await self.get_all_feedbacks()
@@ -106,6 +151,7 @@ class WeeklyReportService:
 
         if not feedbacks and not visitor_logs:
             logger.info("No data to report this week")
+            await self.record_run("sent", "No data collected this week")
             return True
 
         now = datetime.now().strftime("%Y-%m-%d %H:%M")
@@ -153,10 +199,19 @@ class WeeklyReportService:
         </body></html>"""
 
         subject = f"Mind Map Editor - Weekly Report - {now}"
-        success = self.send_email(subject, html)
+
+        # Close the read phase before the slow SMTP call.
+        await self.db.commit()
+        success = await asyncio.to_thread(self.send_email, subject, html)
 
         if success:
             await self.clear_feedbacks()
             await self.clear_visitor_logs()
+            await self.record_run(
+                "sent",
+                f"feedbacks={len(feedbacks)}, visitor_logs={len(visitor_logs)}",
+            )
+        else:
+            await self.record_run("failed", "SMTP delivery failed; data preserved")
 
         return success

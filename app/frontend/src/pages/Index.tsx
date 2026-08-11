@@ -5,11 +5,62 @@ import { Toolbar } from "@/components/Toolbar";
 import { I18nContext } from "@/i18n/useTranslation";
 import { Language, translations, isRTL as checkRTL } from "@/i18n/translations";
 import { MindMapData } from "@/types/mindmap";
+import { client } from "@/lib/api";
 
-const AUTO_SAVE_INTERVAL = 5 * 60 * 1000; // 5 minutes
+const STORAGE_DATA_KEY = "personal-mind-map:data:v1";
+const STORAGE_DIRTY_KEY = "personal-mind-map:dirty:v1";
+const STORAGE_LANG_KEY = "personal-mind-map:lang:v1";
+const STORAGE_SIDEBAR_KEY = "personal-mind-map:sidebar:v1";
+
+const SUPPORTED_LANGUAGES: Language[] = ["en", "es", "fa", "ar", "zh", "ru"];
+
+function readStoredLanguage(): Language {
+  try {
+    const stored = localStorage.getItem(STORAGE_LANG_KEY);
+    if (stored && (SUPPORTED_LANGUAGES as string[]).includes(stored)) return stored as Language;
+  } catch {
+    // Storage may be unavailable in private mode.
+  }
+  return "en";
+}
+
+function readStoredSidebar(): boolean {
+  try {
+    return localStorage.getItem(STORAGE_SIDEBAR_KEY) !== "closed";
+  } catch {
+    return true;
+  }
+}
+
+function detectDeviceType(): string {
+  const ua = navigator.userAgent;
+  if (/iPad|Tablet/i.test(ua)) return "tablet";
+  if (/Mobi|Android|iPhone/i.test(ua)) return "mobile";
+  return "desktop";
+}
+
+function detectBrowser(): string {
+  const ua = navigator.userAgent;
+  if (/Edg\//.test(ua)) return "Edge";
+  if (/OPR\//.test(ua)) return "Opera";
+  if (/Chrome\//.test(ua)) return "Chrome";
+  if (/Safari\//.test(ua)) return "Safari";
+  if (/Firefox\//.test(ua)) return "Firefox";
+  return "Other";
+}
+
+function detectOS(): string {
+  const ua = navigator.userAgent;
+  if (/Windows/i.test(ua)) return "Windows";
+  if (/Android/i.test(ua)) return "Android";
+  if (/iPhone|iPad|iOS/i.test(ua)) return "iOS";
+  if (/Mac OS/i.test(ua)) return "macOS";
+  if (/Linux/i.test(ua)) return "Linux";
+  return "Other";
+}
 
 export default function Index() {
-  const [language, setLanguageState] = useState<Language>("fa");
+  const [language, setLanguageState] = useState<Language>(() => readStoredLanguage());
   const t = translations[language];
   const isRTLDir = checkRTL(language);
 
@@ -38,23 +89,118 @@ export default function Index() {
   } = useMindMap(t.newNode, t.mainIdea, t.branch1, t.branch2, t.branch3);
 
   const [editingNodeId, setEditingNodeId] = useState<string | null>(null);
-  const [autoSaveEnabled, setAutoSaveEnabled] = useState(false);
-  const [fileHandle, setFileHandle] = useState<FileSystemFileHandle | null>(null);
-  const [autoSaveHandle, setAutoSaveHandle] = useState<FileSystemFileHandle | null>(null);
   const [hasUserModified, setHasUserModified] = useState(false);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [restored, setRestored] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(() => readStoredSidebar());
   const canvasHandle = useRef<MindMapCanvasHandle>(null);
-  const autoSaveIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const visitLogged = useRef(false);
 
   const selectedNode = selectedNodeId ? findNode(data.root, selectedNodeId) : null;
 
-  // Track if user has made any modifications
+  // Restore the last working project so a refresh never loses work.
   useEffect(() => {
-    if (isModified) {
-      setHasUserModified(true);
+    try {
+      const raw = localStorage.getItem(STORAGE_DATA_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw) as MindMapData;
+        if (parsed?.root?.id && typeof parsed.root.text === "string") {
+          loadFromJSON(parsed);
+          setHasUserModified(true);
+          if (localStorage.getItem(STORAGE_DIRTY_KEY) === "true") setHasUnsavedChanges(true);
+        }
+      }
+    } catch {
+      // A corrupted snapshot must not block the editor.
     }
+    setRestored(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Persist every change so the project survives refresh or accidental close.
+  useEffect(() => {
+    if (!restored) return;
+    try {
+      localStorage.setItem(STORAGE_DATA_KEY, JSON.stringify(data));
+    } catch {
+      // Ignore quota errors; in-memory state is still intact.
+    }
+  }, [data, restored]);
+
+  useEffect(() => {
+    if (isModified) setHasUnsavedChanges(true);
   }, [isModified]);
 
-  // Auto-edit newly created nodes
+  useEffect(() => {
+    if (isModified) setHasUserModified(true);
+  }, [isModified]);
+
+  useEffect(() => {
+    if (!restored) return;
+    try {
+      localStorage.setItem(STORAGE_DIRTY_KEY, hasUnsavedChanges ? "true" : "false");
+    } catch {
+      // Ignore storage failures.
+    }
+  }, [hasUnsavedChanges, restored]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(STORAGE_LANG_KEY, language);
+    } catch {
+      // Ignore storage failures.
+    }
+  }, [language]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(STORAGE_SIDEBAR_KEY, sidebarOpen ? "open" : "closed");
+    } catch {
+      // Ignore storage failures.
+    }
+  }, [sidebarOpen]);
+
+  // Warn before leaving, closing or refreshing with unsaved work.
+  useEffect(() => {
+    if (!hasUnsavedChanges) return;
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = t.unsavedWarning;
+      return t.unsavedWarning;
+    };
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, [hasUnsavedChanges, t.unsavedWarning]);
+
+  // Log the visit once per session for the weekly report.
+  useEffect(() => {
+    if (visitLogged.current) return;
+    visitLogged.current = true;
+    client.apiCall
+      .invoke({
+        url: "/api/v1/reports/visitor-log",
+        method: "POST",
+        data: {
+          page_visited: window.location.pathname,
+          device_type: detectDeviceType(),
+          browser: detectBrowser(),
+          os: detectOS(),
+          actions_summary: `opened editor, lang=${language}, screen=${window.screen.width}x${window.screen.height}`,
+        },
+      })
+      .catch(() => {
+        // Logging must never block the editor.
+      });
+
+    // The backend decides whether a full week has passed before sending the email.
+    client.apiCall
+      .invoke({ url: "/api/v1/reports/run-weekly-report", method: "POST", data: {} })
+      .catch(() => {
+        // Scheduling must never block the editor.
+      });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   useEffect(() => {
     if (lastCreatedNodeId) {
       setEditingNodeId(lastCreatedNodeId);
@@ -62,74 +208,8 @@ export default function Index() {
     }
   }, [lastCreatedNodeId, setLastCreatedNodeId]);
 
-  // Auto-save interval (every 5 minutes)
-  useEffect(() => {
-    if (autoSaveEnabled && autoSaveHandle) {
-      autoSaveIntervalRef.current = setInterval(async () => {
-        try {
-          const writable = await autoSaveHandle.createWritable();
-          await writable.write(JSON.stringify(data, null, 2));
-          await writable.close();
-          console.log("Auto-saved at", new Date().toLocaleTimeString());
-        } catch (err) {
-          console.error("Auto-save failed:", err);
-        }
-      }, AUTO_SAVE_INTERVAL);
-    }
-    return () => {
-      if (autoSaveIntervalRef.current) {
-        clearInterval(autoSaveIntervalRef.current);
-        autoSaveIntervalRef.current = null;
-      }
-    };
-  }, [autoSaveEnabled, autoSaveHandle, data]);
-
-  const handleSave = async () => {
-    if (fileHandle) {
-      try {
-        const writable = await fileHandle.createWritable();
-        await writable.write(JSON.stringify(data, null, 2));
-        await writable.close();
-        markSaved();
-      } catch (err) {
-        console.error("Save failed:", err);
-        downloadJSON();
-      }
-    } else {
-      await handleSaveAs();
-    }
-  };
-
-  const handleSaveAs = async () => {
-    if ("showSaveFilePicker" in window) {
-      try {
-        const handle = await (window as unknown as { showSaveFilePicker: (opts: unknown) => Promise<FileSystemFileHandle> }).showSaveFilePicker({
-          suggestedName: "mindmap.json",
-          types: [
-            {
-              description: "JSON Files",
-              accept: { "application/json": [".json"] },
-            },
-          ],
-        });
-        setFileHandle(handle);
-        const writable = await handle.createWritable();
-        await writable.write(JSON.stringify(data, null, 2));
-        await writable.close();
-        markSaved();
-      } catch (err) {
-        if ((err as Error).name !== "AbortError") {
-          downloadJSON();
-        }
-      }
-    } else {
-      downloadJSON();
-    }
-  };
-
-  const downloadJSON = () => {
-    const json = JSON.stringify(data, null, 2);
-    const blob = new Blob([json], { type: "application/json" });
+  const downloadJSON = useCallback(() => {
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
@@ -137,62 +217,40 @@ export default function Index() {
     a.click();
     URL.revokeObjectURL(url);
     markSaved();
-  };
+    setHasUnsavedChanges(false);
+  }, [data, markSaved]);
+
+  const handleSaveAs = useCallback(async () => {
+    if ("showSaveFilePicker" in window) {
+      try {
+        const handle = await (
+          window as unknown as { showSaveFilePicker: (opts: unknown) => Promise<FileSystemFileHandle> }
+        ).showSaveFilePicker({
+          suggestedName: "mindmap.json",
+          types: [{ description: "JSON Files", accept: { "application/json": [".json"] } }],
+        });
+        const writable = await (handle as unknown as { createWritable: () => Promise<FileSystemWritableFileStream> }).createWritable();
+        await writable.write(JSON.stringify(data, null, 2));
+        await writable.close();
+        markSaved();
+        setHasUnsavedChanges(false);
+      } catch (err) {
+        if ((err as Error).name !== "AbortError") downloadJSON();
+      }
+    } else {
+      downloadJSON();
+    }
+  }, [data, markSaved, downloadJSON]);
 
   const handleLoad = (loadedData: MindMapData) => {
     loadFromJSON(loadedData);
     setHasUserModified(true);
-  };
-
-  const handleToggleAutoSave = async () => {
-    if (!autoSaveEnabled) {
-      // Ask user for auto-save location
-      if ("showSaveFilePicker" in window) {
-        try {
-          const handle = await (window as unknown as { showSaveFilePicker: (opts: unknown) => Promise<FileSystemFileHandle> }).showSaveFilePicker({
-            suggestedName: "mindmap_autosave.json",
-            types: [
-              {
-                description: "JSON Files",
-                accept: { "application/json": [".json"] },
-              },
-            ],
-          });
-          setAutoSaveHandle(handle);
-          setAutoSaveEnabled(true);
-          // Immediately save once
-          try {
-            const writable = await handle.createWritable();
-            await writable.write(JSON.stringify(data, null, 2));
-            await writable.close();
-          } catch (err) {
-            console.error("Initial auto-save failed:", err);
-          }
-        } catch (err) {
-          if ((err as Error).name !== "AbortError") {
-            console.error("Auto-save setup failed:", err);
-          }
-          // User cancelled - don't enable auto-save
-        }
-      } else {
-        // Fallback: just enable auto-save with download
-        setAutoSaveEnabled(true);
-      }
-    } else {
-      setAutoSaveEnabled(false);
-      setAutoSaveHandle(null);
-      if (autoSaveIntervalRef.current) {
-        clearInterval(autoSaveIntervalRef.current);
-        autoSaveIntervalRef.current = null;
-      }
-    }
+    setHasUnsavedChanges(false);
   };
 
   const handleLanguageChange = useCallback((lang: Language) => {
     const newT = translations[lang];
     setLanguageState(lang);
-
-    // Only reset map if user has NOT modified anything
     if (!hasUserModified) {
       resetMap(newT.mainIdea, newT.branch1, newT.branch2, newT.branch3);
     }
@@ -217,7 +275,6 @@ export default function Index() {
     }
   }, [setSelectedNodeId]);
 
-  // Keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key === "z" && !e.shiftKey) {
@@ -228,25 +285,20 @@ export default function Index() {
         e.preventDefault();
         redo();
       }
-      if ((e.ctrlKey || e.metaKey) && e.key === "s" && !e.shiftKey) {
-        e.preventDefault();
-        handleSave();
-      }
-      if ((e.ctrlKey || e.metaKey) && e.key === "s" && e.shiftKey) {
+      if ((e.ctrlKey || e.metaKey) && e.key === "s") {
         e.preventDefault();
         handleSaveAs();
       }
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [undo, redo, data, fileHandle]);
+  }, [undo, redo, handleSaveAs]);
 
-  // Set document direction
   useEffect(() => {
     document.documentElement.dir = isRTLDir ? "rtl" : "ltr";
     document.documentElement.lang = language;
-  }, [isRTLDir, language]);
+    document.title = t.appTitle;
+  }, [isRTLDir, language, t.appTitle]);
 
   const i18nValue = {
     language,
@@ -259,12 +311,14 @@ export default function Index() {
   return (
     <I18nContext.Provider value={i18nValue}>
       <div className="h-[100dvh] flex bg-slate-50 overflow-hidden" dir={isRTLDir ? "rtl" : "ltr"}>
-        {/* Main content area with sidebar offset on desktop */}
-        <div className="flex-1 flex flex-col min-w-0 lg:ms-56">
+        <div className={`flex-1 flex flex-col min-w-0 transition-all duration-200 ${sidebarOpen ? "lg:ms-56" : "lg:ms-0"}`}>
           <Toolbar
-            data={data}
             onLoad={handleLoad}
-            onReset={() => { resetMap(t.mainIdea, t.branch1, t.branch2, t.branch3); setHasUserModified(false); }}
+            onReset={() => {
+              resetMap(t.mainIdea, t.branch1, t.branch2, t.branch3);
+              setHasUserModified(false);
+              setHasUnsavedChanges(false);
+            }}
             canvasHandle={canvasHandle}
             onUndo={undo}
             onRedo={redo}
@@ -272,16 +326,15 @@ export default function Index() {
             canRedo={canRedo}
             selectedNode={selectedNode}
             isRoot={selectedNode?.id === data.root.id}
+            hasUnsavedChanges={hasUnsavedChanges}
             onDeleteNode={deleteNode}
             onUpdateColor={updateNodeColor}
-            onStartEdit={handleStartEdit}
             onUpdateComment={updateNodeComment}
             onUpdateHyperlink={updateNodeHyperlink}
-            autoSaveEnabled={autoSaveEnabled}
-            onToggleAutoSave={handleToggleAutoSave}
-            onSave={handleSave}
             onSaveAs={handleSaveAs}
             onLanguageChange={handleLanguageChange}
+            sidebarOpen={sidebarOpen}
+            onToggleSidebar={() => setSidebarOpen((open) => !open)}
           />
 
           <div className="flex-1 relative min-h-0 overflow-hidden">
@@ -291,6 +344,12 @@ export default function Index() {
               selectedNodeId={selectedNodeId}
               editingNodeId={editingNodeId}
               isRTL={isRTLDir}
+              labels={{
+                zoomIn: t.zoomIn,
+                zoomOut: t.zoomOut,
+                resetView: t.resetView,
+                fitToScreen: t.fitToScreen,
+              }}
               onSelectNode={handleSelectNode}
               onStartEdit={handleStartEdit}
               onFinishEdit={handleFinishEdit}

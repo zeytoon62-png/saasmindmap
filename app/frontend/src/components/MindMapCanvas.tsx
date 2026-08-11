@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, forwardRef, useImperativeHandle, useCallback } from "react";
 import { MindMapNode } from "@/types/mindmap";
+import { Maximize2, Minus, Plus, Crosshair } from "lucide-react";
 
 interface NodePosition {
   id: string;
@@ -7,6 +8,8 @@ interface NodePosition {
   y: number;
   width: number;
   height: number;
+  lines: string[];
+  iconReserve: number;
 }
 
 interface MindMapCanvasProps {
@@ -14,6 +17,12 @@ interface MindMapCanvasProps {
   selectedNodeId: string | null;
   editingNodeId: string | null;
   isRTL: boolean;
+  labels: {
+    zoomIn: string;
+    zoomOut: string;
+    resetView: string;
+    fitToScreen: string;
+  };
   onSelectNode: (id: string) => void;
   onStartEdit: (id: string) => void;
   onFinishEdit: (id: string, text: string) => void;
@@ -25,14 +34,83 @@ export interface MindMapCanvasHandle {
   exportToImage: () => Promise<string | null>;
 }
 
-const NODE_HEIGHT = 34;
-const NODE_PADDING_X = 8;
+const NODE_MIN_WIDTH = 64;
+const NODE_MIN_HEIGHT = 34;
+/** Halved horizontal/vertical text padding inside node boxes. */
+const NODE_PADDING_X = 7;
+const NODE_PADDING_Y = 5;
+const LINE_HEIGHT = 17;
+const CHAR_WIDTH = 8.4;
+const MAX_CHARS_PER_LINE = 20;
 const HORIZONTAL_GAP = 60;
 const VERTICAL_GAP = 14;
 const PLUS_BUTTON_RADIUS = 11;
+const ICON_SIZE = 11;
+const ICON_PAD = 3;
+const EDGE_MARGIN = 40;
+const FIT_MARGIN = 48;
+const MIN_ZOOM = 0.2;
+const MAX_ZOOM = 3;
 
-function measureTextWidth(text: string): number {
-  return Math.max(60, text.length * 11 + NODE_PADDING_X * 2);
+/** Wrap long labels and honour explicit line breaks entered with Shift+Enter. */
+function wrapText(text: string): string[] {
+  const paragraphs = text.split("\n");
+  const lines: string[] = [];
+
+  for (const paragraph of paragraphs) {
+    const clean = paragraph.replace(/[ \t]+/g, " ").trim();
+    if (!clean) {
+      lines.push("");
+      continue;
+    }
+    if (clean.length <= MAX_CHARS_PER_LINE) {
+      lines.push(clean);
+      continue;
+    }
+
+    const words = clean.split(" ");
+    let current = "";
+
+    for (const word of words) {
+      if (word.length > MAX_CHARS_PER_LINE) {
+        if (current) {
+          lines.push(current);
+          current = "";
+        }
+        let rest = word;
+        while (rest.length > MAX_CHARS_PER_LINE) {
+          lines.push(rest.slice(0, MAX_CHARS_PER_LINE));
+          rest = rest.slice(MAX_CHARS_PER_LINE);
+        }
+        current = rest;
+        continue;
+      }
+      const candidate = current ? `${current} ${word}` : word;
+      if (candidate.length > MAX_CHARS_PER_LINE) {
+        lines.push(current);
+        current = word;
+      } else {
+        current = candidate;
+      }
+    }
+    if (current) lines.push(current);
+  }
+
+  return lines.length ? lines : [""];
+}
+
+function measureNode(text: string, hasIcons: boolean) {
+  const lines = wrapText(text);
+  const longest = lines.reduce((max, line) => Math.max(max, line.length), 0);
+  const iconReserve = hasIcons ? ICON_SIZE + ICON_PAD * 2 : 0;
+  // Padding stays constant regardless of text length.
+  const width = Math.max(NODE_MIN_WIDTH, Math.round(longest * CHAR_WIDTH) + NODE_PADDING_X * 2) + iconReserve;
+  const height = Math.max(NODE_MIN_HEIGHT, lines.length * LINE_HEIGHT + NODE_PADDING_Y * 2);
+  return { lines, width, height, iconReserve };
+}
+
+function hasIcons(node: MindMapNode): boolean {
+  return !!node.comment || !!node.hyperlink;
 }
 
 function calculateLayout(
@@ -40,31 +118,33 @@ function calculateLayout(
   x: number,
   y: number,
   positions: NodePosition[],
-  isRTL: boolean
+  isRTL: boolean,
+  textOf: (node: MindMapNode) => string
 ): { totalHeight: number } {
-  const width = measureTextWidth(node.text);
+  const { lines, width, height, iconReserve } = measureNode(textOf(node), hasIcons(node));
 
   if (node.children.length === 0) {
-    positions.push({ id: node.id, x, y, width, height: NODE_HEIGHT });
-    return { totalHeight: NODE_HEIGHT };
+    positions.push({ id: node.id, x, y, width, height, lines, iconReserve });
+    return { totalHeight: height };
   }
 
   let childY = y;
   let totalChildHeight = 0;
 
   for (const child of node.children) {
-    const actualChildX = isRTL ? x - HORIZONTAL_GAP - measureTextWidth(child.text) : x + width + HORIZONTAL_GAP;
-    const { totalHeight } = calculateLayout(child, actualChildX, childY, positions, isRTL);
+    const childWidth = measureNode(textOf(child), hasIcons(child)).width;
+    const childX = isRTL ? x - HORIZONTAL_GAP - childWidth : x + width + HORIZONTAL_GAP;
+    const { totalHeight } = calculateLayout(child, childX, childY, positions, isRTL, textOf);
     totalChildHeight += totalHeight;
     childY += totalHeight + VERTICAL_GAP;
   }
 
   totalChildHeight += (node.children.length - 1) * VERTICAL_GAP;
 
-  const nodeY = y + totalChildHeight / 2 - NODE_HEIGHT / 2;
-  positions.push({ id: node.id, x, y: nodeY, width, height: NODE_HEIGHT });
+  const nodeY = y + totalChildHeight / 2 - height / 2;
+  positions.push({ id: node.id, x, y: nodeY, width, height, lines, iconReserve });
 
-  return { totalHeight: Math.max(totalChildHeight, NODE_HEIGHT) };
+  return { totalHeight: Math.max(totalChildHeight, height) };
 }
 
 function getNodeColor(node: MindMapNode, depth: number): string {
@@ -82,110 +162,153 @@ function getNodeDepth(root: MindMapNode, targetId: string, depth = 0): number {
   return -1;
 }
 
+/** Open links directly, adding a protocol when the user omitted it. */
+function normalizeUrl(url: string): string {
+  const trimmed = url.trim();
+  if (!trimmed) return "";
+  if (/^[a-zA-Z][a-zA-Z0-9+.-]*:\/\//.test(trimmed) || /^mailto:/i.test(trimmed)) return trimmed;
+  return `https://${trimmed.replace(/^\/+/, "")}`;
+}
+
 export const MindMapCanvas = forwardRef<MindMapCanvasHandle, MindMapCanvasProps>(
-  ({ root, selectedNodeId, editingNodeId, isRTL: isRTLLayout, onSelectNode, onStartEdit, onFinishEdit, onAddChild, onReparentNode }, ref) => {
+  ({ root, selectedNodeId, editingNodeId, isRTL: isRTLLayout, labels, onSelectNode, onStartEdit, onFinishEdit, onAddChild, onReparentNode }, ref) => {
     const [zoom, setZoom] = useState(1);
-    const [pan, setPan] = useState({ x: 40, y: 40 });
+    const [pan, setPan] = useState({ x: EDGE_MARGIN, y: EDGE_MARGIN });
     const [isPanning, setIsPanning] = useState(false);
-    const [panStart, setPanStart] = useState({ x: 0, y: 0 });
+    const [editText, setEditText] = useState("");
+
     const svgRef = useRef<SVGSVGElement>(null);
     const containerRef = useRef<HTMLDivElement>(null);
-    const lastTouchDistance = useRef<number | null>(null);
-    const lastTouchCenter = useRef<{ x: number; y: number } | null>(null);
-    const [editText, setEditText] = useState("");
-    const foreignObjectInputRef = useRef<HTMLInputElement>(null);
-    const initialPanSet = useRef(false);
+    const editInputRef = useRef<HTMLTextAreaElement>(null);
+    const zoomRef = useRef(1);
+    const panRef = useRef({ x: EDGE_MARGIN, y: EDGE_MARGIN });
+    const panStartRef = useRef({ x: 0, y: 0 });
+    const pinchDistance = useRef<number | null>(null);
+    const pinchCenter = useRef<{ x: number; y: number } | null>(null);
 
     // Drag state
     const [draggingNodeId, setDraggingNodeId] = useState<string | null>(null);
-    const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
     const [dragPos, setDragPos] = useState({ x: 0, y: 0 });
     const [nearestParentId, setNearestParentId] = useState<string | null>(null);
+    const dragOffset = useRef({ x: 0, y: 0 });
     const dragStartPos = useRef<{ x: number; y: number } | null>(null);
     const isDragActive = useRef(false);
 
+    useEffect(() => {
+      zoomRef.current = zoom;
+    }, [zoom]);
+
+    useEffect(() => {
+      panRef.current = pan;
+    }, [pan]);
+
+    // Live text of the node being edited so the box resizes while typing.
+    const textOf = useCallback(
+      (node: MindMapNode) => (node.id === editingNodeId ? editText : node.text),
+      [editingNodeId, editText]
+    );
+
     const positions: NodePosition[] = [];
-    const startX = isRTLLayout ? 800 : 0;
-    calculateLayout(root, startX, 0, positions, isRTLLayout);
+    calculateLayout(root, 0, 0, positions, isRTLLayout, textOf);
 
-    const minX = Math.min(...positions.map((p) => p.x));
-    const maxX = Math.max(...positions.map((p) => p.x + p.width)) + 150;
-    const maxY = Math.max(...positions.map((p) => p.y + p.height)) + 100;
+    const contentMinX = Math.min(...positions.map((p) => p.x));
+    const contentMaxX = Math.max(...positions.map((p) => p.x + p.width));
+    const contentMinY = Math.min(...positions.map((p) => p.y));
+    const contentMaxY = Math.max(...positions.map((p) => p.y + p.height));
 
-    // Set initial pan: RTL -> tree at right side of canvas
-    useEffect(() => {
-      if (!initialPanSet.current && containerRef.current) {
-        const containerWidth = containerRef.current.clientWidth;
-        if (isRTLLayout) {
-          // Position tree at the right side of the canvas
-          const treeWidth = maxX - minX;
-          const offsetX = containerWidth - treeWidth - 60;
-          setPan({ x: offsetX - minX, y: 40 });
-        } else {
-          setPan({ x: 40, y: 40 });
-        }
-        initialPanSet.current = true;
+    /** Same visual margin from the near edge in both LTR and RTL. */
+    const computeInitialPan = useCallback(() => {
+      const containerWidth = containerRef.current?.clientWidth ?? 0;
+      if (isRTLLayout && containerWidth > 0) {
+        return { x: containerWidth - EDGE_MARGIN - contentMaxX, y: EDGE_MARGIN };
       }
+      return { x: EDGE_MARGIN - contentMinX, y: EDGE_MARGIN };
       // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+    }, [isRTLLayout, contentMaxX, contentMinX]);
 
-    // Reset pan when RTL changes
+    const resetView = useCallback(() => {
+      const next = computeInitialPan();
+      zoomRef.current = 1;
+      panRef.current = next;
+      setZoom(1);
+      setPan(next);
+    }, [computeInitialPan]);
+
+    /** Scale and centre so the entire map fits inside the visible viewport. */
+    const fitToScreen = useCallback(() => {
+      const container = containerRef.current;
+      if (!container) return;
+      const viewWidth = container.clientWidth;
+      const viewHeight = container.clientHeight;
+      if (viewWidth <= 0 || viewHeight <= 0) return;
+
+      // Include the trailing "+" buttons so nothing is clipped after fitting.
+      const boundsMinX = contentMinX - (PLUS_BUTTON_RADIUS * 2 + 8);
+      const boundsMaxX = contentMaxX + (PLUS_BUTTON_RADIUS * 2 + 8);
+      const boundsWidth = Math.max(1, boundsMaxX - boundsMinX);
+      const boundsHeight = Math.max(1, contentMaxY - contentMinY);
+
+      const availableWidth = Math.max(50, viewWidth - FIT_MARGIN * 2);
+      const availableHeight = Math.max(50, viewHeight - FIT_MARGIN * 2);
+      const rawZoom = Math.min(availableWidth / boundsWidth, availableHeight / boundsHeight);
+      const nextZoom = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, rawZoom));
+      if (!Number.isFinite(nextZoom) || nextZoom <= 0) return;
+
+      const nextX = viewWidth / 2 - ((boundsMinX + boundsMaxX) / 2) * nextZoom;
+      const nextY = viewHeight / 2 - ((contentMinY + contentMaxY) / 2) * nextZoom;
+      if (!Number.isFinite(nextX) || !Number.isFinite(nextY)) return;
+
+      zoomRef.current = nextZoom;
+      panRef.current = { x: nextX, y: nextY };
+      setZoom(nextZoom);
+      setPan({ x: nextX, y: nextY });
+    }, [contentMinX, contentMaxX, contentMinY, contentMaxY]);
+
+    // Initial placement and re-placement when the reading direction flips.
     useEffect(() => {
-      if (containerRef.current) {
-        const containerWidth = containerRef.current.clientWidth;
-        if (isRTLLayout) {
-          const treeWidth = maxX - minX;
-          const offsetX = containerWidth - treeWidth - 60;
-          setPan({ x: offsetX - minX, y: 40 });
-        } else {
-          setPan({ x: 40, y: 40 });
-        }
-      }
+      resetView();
       // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [isRTLLayout]);
 
-    // When editing starts, set the text
     useEffect(() => {
-      if (editingNodeId) {
-        const findNodeText = (node: MindMapNode): string | null => {
-          if (node.id === editingNodeId) return node.text;
-          for (const child of node.children) {
-            const t = findNodeText(child);
-            if (t !== null) return t;
-          }
-          return null;
-        };
-        const text = findNodeText(root);
-        if (text !== null) setEditText(text);
-        setTimeout(() => {
-          if (foreignObjectInputRef.current) {
-            foreignObjectInputRef.current.focus();
-            foreignObjectInputRef.current.select();
-          }
-        }, 50);
-      }
-    }, [editingNodeId, root]);
+      if (!editingNodeId) return;
+      const findNodeText = (node: MindMapNode): string | null => {
+        if (node.id === editingNodeId) return node.text;
+        for (const child of node.children) {
+          const found = findNodeText(child);
+          if (found !== null) return found;
+        }
+        return null;
+      };
+      const text = findNodeText(root);
+      if (text !== null) setEditText(text);
+      const timer = setTimeout(() => {
+        // preventScroll keeps the top toolbar in place when the mobile keyboard opens.
+        editInputRef.current?.focus({ preventScroll: true });
+        editInputRef.current?.select();
+      }, 40);
+      return () => clearTimeout(timer);
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [editingNodeId]);
 
     useImperativeHandle(ref, () => ({
       exportToImage: async () => {
         if (!svgRef.current) return null;
 
         const svgClone = svgRef.current.cloneNode(true) as SVGSVGElement;
-        const totalWidth = maxX - minX + 120;
-        const totalHeight = maxY + 120;
+        const totalWidth = contentMaxX - contentMinX + 200;
+        const totalHeight = contentMaxY - contentMinY + 160;
         svgClone.setAttribute("width", String(totalWidth));
         svgClone.setAttribute("height", String(totalHeight));
 
         const gElement = svgClone.querySelector("g");
         if (gElement) {
-          gElement.setAttribute("transform", `translate(${-minX + 60}, 60)`);
+          gElement.setAttribute("transform", `translate(${-contentMinX + 80}, ${-contentMinY + 60})`);
         }
 
-        const foreignObjects = svgClone.querySelectorAll("foreignObject");
-        foreignObjects.forEach((fo) => fo.remove());
+        svgClone.querySelectorAll("foreignObject").forEach((fo) => fo.remove());
 
-        const serializer = new XMLSerializer();
-        const svgString = serializer.serializeToString(svgClone);
+        const svgString = new XMLSerializer().serializeToString(svgClone);
         const svgBlob = new Blob([svgString], { type: "image/svg+xml;charset=utf-8" });
         const url = URL.createObjectURL(svgBlob);
 
@@ -218,11 +341,60 @@ export const MindMapCanvas = forwardRef<MindMapCanvasHandle, MindMapCanvasProps>
 
     const findPosition = (id: string) => positions.find((p) => p.id === id);
 
+    /** Pointer coordinates relative to the canvas box (sidebar-safe). */
+    const toLocalPoint = useCallback((clientX: number, clientY: number) => {
+      const rect = containerRef.current?.getBoundingClientRect();
+      return {
+        x: clientX - (rect?.left ?? 0),
+        y: clientY - (rect?.top ?? 0),
+      };
+    }, []);
+
+    const localToSvg = useCallback((localX: number, localY: number) => {
+      const currentZoom = zoomRef.current || 1;
+      return {
+        x: (localX - panRef.current.x) / currentZoom,
+        y: (localY - panRef.current.y) / currentZoom,
+      };
+    }, []);
+
+    /** Zoom around a fixed anchor point so the content under the pointer stays put. */
+    const applyZoom = useCallback((factor: number, anchorX: number, anchorY: number) => {
+      if (!Number.isFinite(factor) || factor <= 0) return;
+      const prevZoom = zoomRef.current || 1;
+      const nextZoom = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, prevZoom * factor));
+      if (!Number.isFinite(nextZoom) || nextZoom === prevZoom) return;
+
+      const ratio = nextZoom / prevZoom;
+      const prevPan = panRef.current;
+      const nextX = anchorX - (anchorX - prevPan.x) * ratio;
+      const nextY = anchorY - (anchorY - prevPan.y) * ratio;
+      if (!Number.isFinite(nextX) || !Number.isFinite(nextY)) return;
+
+      zoomRef.current = nextZoom;
+      panRef.current = { x: nextX, y: nextY };
+      setZoom(nextZoom);
+      setPan({ x: nextX, y: nextY });
+    }, []);
+
+    const zoomFromButton = useCallback((factor: number) => {
+      const rect = containerRef.current?.getBoundingClientRect();
+      applyZoom(factor, (rect?.width ?? 0) / 2, (rect?.height ?? 0) / 2);
+    }, [applyZoom]);
+
+    const movePan = useCallback((dx: number, dy: number) => {
+      const prev = panRef.current;
+      const next = { x: prev.x + dx, y: prev.y + dy };
+      if (!Number.isFinite(next.x) || !Number.isFinite(next.y)) return;
+      panRef.current = next;
+      setPan(next);
+    }, []);
+
     const getDescendantIds = useCallback((node: MindMapNode, targetId: string): string[] => {
       if (node.id === targetId) {
         const collect = (n: MindMapNode): string[] => {
           let ids = [n.id];
-          for (const c of n.children) ids = ids.concat(collect(c));
+          for (const child of n.children) ids = ids.concat(collect(child));
           return ids;
         };
         return collect(node);
@@ -234,22 +406,13 @@ export const MindMapCanvas = forwardRef<MindMapCanvasHandle, MindMapCanvasProps>
       return [];
     }, []);
 
-    // RTL/LTR-aware proximity: 
-    // RTL: distance from left edge of moving node to left edge of fixed node (where children connect from left)
-    // LTR: distance from right edge of moving node to right edge of fixed node (where children connect from right)
     const findNearestNode = useCallback((x: number, y: number, excludeIds: string[]): string | null => {
       let nearest: string | null = null;
       let minDist = Infinity;
       for (const pos of positions) {
         if (excludeIds.includes(pos.id)) continue;
-        let edgeX: number;
-        if (isRTLLayout) {
-          // In RTL, children connect to the left side of parent
-          edgeX = pos.x;
-        } else {
-          // In LTR, children connect to the right side of parent
-          edgeX = pos.x + pos.width;
-        }
+        // RTL children attach to the parent's left edge, LTR to the right edge.
+        const edgeX = isRTLLayout ? pos.x : pos.x + pos.width;
         const edgeY = pos.y + pos.height / 2;
         const dist = Math.sqrt((edgeX - x) ** 2 + (edgeY - y) ** 2);
         if (dist < minDist) {
@@ -260,12 +423,23 @@ export const MindMapCanvas = forwardRef<MindMapCanvasHandle, MindMapCanvasProps>
       return nearest;
     }, [positions, isRTLLayout]);
 
-    const screenToSvg = useCallback((clientX: number, clientY: number) => {
-      return {
-        x: (clientX - pan.x) / zoom,
-        y: (clientY - pan.y) / zoom,
+    const cancelDrag = useCallback(() => {
+      setDraggingNodeId(null);
+      setNearestParentId(null);
+      isDragActive.current = false;
+      dragStartPos.current = null;
+    }, []);
+
+    const startNodeDrag = useCallback((nodeId: string, pos: NodePosition, clientX: number, clientY: number) => {
+      const local = toLocalPoint(clientX, clientY);
+      const svgPoint = localToSvg(local.x, local.y);
+      dragStartPos.current = { x: clientX, y: clientY };
+      dragOffset.current = {
+        x: svgPoint.x - (pos.x + pos.width / 2),
+        y: svgPoint.y - (pos.y + pos.height / 2),
       };
-    }, [pan.x, pan.y, zoom]);
+      setDraggingNodeId(nodeId);
+    }, [toLocalPoint, localToSvg]);
 
     const renderConnections = (node: MindMapNode): JSX.Element[] => {
       const lines: JSX.Element[] = [];
@@ -277,21 +451,14 @@ export const MindMapCanvas = forwardRef<MindMapCanvasHandle, MindMapCanvasProps>
         const childPos = findPosition(child.id);
         if (!childPos) continue;
 
-        let startX: number, startY: number, endX: number, endY: number;
-
-        if (isRTLLayout) {
-          startX = parentPos.x - PLUS_BUTTON_RADIUS * 2 - 4;
-          startY = parentPos.y + parentPos.height / 2;
-          endX = childPos.x + childPos.width;
-          endY = childPos.y + childPos.height / 2;
-        } else {
-          startX = parentPos.x + parentPos.width + PLUS_BUTTON_RADIUS * 2 + 4;
-          startY = parentPos.y + parentPos.height / 2;
-          endX = childPos.x;
-          endY = childPos.y + childPos.height / 2;
-        }
-
+        const startX = isRTLLayout
+          ? parentPos.x - PLUS_BUTTON_RADIUS * 2 - 4
+          : parentPos.x + parentPos.width + PLUS_BUTTON_RADIUS * 2 + 4;
+        const startY = parentPos.y + parentPos.height / 2;
+        const endX = isRTLLayout ? childPos.x + childPos.width : childPos.x;
+        const endY = childPos.y + childPos.height / 2;
         const midX = (startX + endX) / 2;
+
         const depth = getNodeDepth(root, child.id);
         const color = getNodeColor(child, depth);
 
@@ -316,27 +483,65 @@ export const MindMapCanvas = forwardRef<MindMapCanvasHandle, MindMapCanvasProps>
       const parentPos = findPosition(nearestParentId);
       if (!parentPos) return null;
 
-      let connStartX: number, connStartY: number;
-      if (isRTLLayout) {
-        connStartX = parentPos.x - PLUS_BUTTON_RADIUS * 2 - 4;
-        connStartY = parentPos.y + parentPos.height / 2;
-      } else {
-        connStartX = parentPos.x + parentPos.width + PLUS_BUTTON_RADIUS * 2 + 4;
-        connStartY = parentPos.y + parentPos.height / 2;
-      }
-      const endX = dragPos.x;
-      const endY = dragPos.y;
-      const midX = (connStartX + endX) / 2;
+      const startX = isRTLLayout
+        ? parentPos.x - PLUS_BUTTON_RADIUS * 2 - 4
+        : parentPos.x + parentPos.width + PLUS_BUTTON_RADIUS * 2 + 4;
+      const startY = parentPos.y + parentPos.height / 2;
+      const midX = (startX + dragPos.x) / 2;
 
       return (
         <path
-          d={`M ${connStartX} ${connStartY} C ${midX} ${connStartY}, ${midX} ${endY}, ${endX} ${endY}`}
+          d={`M ${startX} ${startY} C ${midX} ${startY}, ${midX} ${dragPos.y}, ${dragPos.x} ${dragPos.y}`}
           fill="none"
           stroke="#94a3b8"
           strokeWidth={2}
           strokeDasharray="6 3"
           strokeOpacity={0.7}
         />
+      );
+    };
+
+    const renderNodeIcons = (node: MindMapNode, pos: NodePosition, iconColor: string): JSX.Element | null => {
+      if (!hasIcons(node)) return null;
+      // Trailing side of the node, inset by a small padding.
+      const iconX = isRTLLayout ? pos.x + ICON_PAD : pos.x + pos.width - ICON_PAD - ICON_SIZE;
+      const topY = pos.y + ICON_PAD;
+      const bottomY = pos.y + pos.height - ICON_PAD - ICON_SIZE;
+
+      return (
+        <g key={`icons-${node.id}`}>
+          {node.comment && (
+            <g transform={`translate(${iconX}, ${topY})`} opacity={0.9}>
+              <title>{node.comment}</title>
+              <path
+                d="M0.8 1.2 h9.4 a0.8 0.8 0 0 1 0.8 0.8 v4.8 a0.8 0.8 0 0 1 -0.8 0.8 h-5.6 l-2.6 2.2 v-2.2 h-1.2 a0.8 0.8 0 0 1 -0.8 -0.8 v-4.8 a0.8 0.8 0 0 1 0.8 -0.8 z"
+                fill="none"
+                stroke={iconColor}
+                strokeWidth={1.1}
+                strokeLinejoin="round"
+              />
+            </g>
+          )}
+          {node.hyperlink && (
+            <g
+              transform={`translate(${iconX}, ${bottomY})`}
+              className="cursor-pointer"
+              onClick={(e) => {
+                e.stopPropagation();
+                const target = normalizeUrl(node.hyperlink || "");
+                if (target) window.open(target, "_blank", "noopener,noreferrer");
+              }}
+              onMouseDown={(e) => e.stopPropagation()}
+            >
+              <title>{node.hyperlink}</title>
+              <rect x={0} y={0} width={ICON_SIZE} height={ICON_SIZE} fill="transparent" />
+              <g fill="none" stroke={iconColor} strokeWidth={1.2} strokeLinecap="round">
+                <path d="M4.3 6.9 a2.1 2.1 0 0 1 0 -2.9 l1.4 -1.4 a2.1 2.1 0 0 1 2.9 2.9 l-0.6 0.6" />
+                <path d="M6.7 4.1 a2.1 2.1 0 0 1 0 2.9 l-1.4 1.4 a2.1 2.1 0 0 1 -2.9 -2.9 l0.6 -0.6" />
+              </g>
+            </g>
+          )}
+        </g>
       );
     };
 
@@ -352,18 +557,21 @@ export const MindMapCanvas = forwardRef<MindMapCanvasHandle, MindMapCanvasProps>
       const isRoot = depth === 0;
       const isBeingDragged = draggingNodeId === node.id && isDragActive.current;
       const isNearestTarget = nearestParentId === node.id && draggingNodeId !== null && isDragActive.current;
-      const hasComment = !!node.comment;
-      const hasHyperlink = !!node.hyperlink;
+      const iconColor = isRoot ? "#FFFFFF" : color;
+
+      const textAreaLeft = isRTLLayout ? pos.x + pos.iconReserve : pos.x;
+      const textCenterX = textAreaLeft + (pos.width - pos.iconReserve) / 2;
+      const firstLineY = pos.y + pos.height / 2 - (pos.lines.length * LINE_HEIGHT) / 2 + LINE_HEIGHT / 2;
 
       if (isBeingDragged) {
-        const w = measureTextWidth(node.text);
+        const measured = measureNode(node.text, hasIcons(node));
         elements.push(
           <g key={`drag-${node.id}`} opacity={0.7}>
             <rect
-              x={dragPos.x - w / 2}
-              y={dragPos.y - NODE_HEIGHT / 2}
-              width={w}
-              height={NODE_HEIGHT}
+              x={dragPos.x - measured.width / 2}
+              y={dragPos.y - measured.height / 2}
+              width={measured.width}
+              height={measured.height}
               rx={6}
               fill="white"
               stroke={color}
@@ -371,8 +579,6 @@ export const MindMapCanvas = forwardRef<MindMapCanvasHandle, MindMapCanvasProps>
               strokeDasharray="4 2"
             />
             <text
-              x={dragPos.x}
-              y={dragPos.y}
               textAnchor="middle"
               dominantBaseline="central"
               fill={color}
@@ -380,7 +586,15 @@ export const MindMapCanvas = forwardRef<MindMapCanvasHandle, MindMapCanvasProps>
               fontWeight={500}
               style={{ pointerEvents: "none", userSelect: "none" }}
             >
-              {node.text}
+              {measured.lines.map((line, index) => (
+                <tspan
+                  key={index}
+                  x={dragPos.x}
+                  y={dragPos.y - (measured.lines.length * LINE_HEIGHT) / 2 + LINE_HEIGHT / 2 + index * LINE_HEIGHT}
+                >
+                  {line}
+                </tspan>
+              ))}
             </text>
           </g>
         );
@@ -391,9 +605,7 @@ export const MindMapCanvas = forwardRef<MindMapCanvasHandle, MindMapCanvasProps>
             className="cursor-pointer"
             onClick={(e) => {
               e.stopPropagation();
-              if (!isDragActive.current) {
-                onSelectNode(node.id);
-              }
+              if (!isDragActive.current) onSelectNode(node.id);
             }}
             onDoubleClick={(e) => {
               e.stopPropagation();
@@ -402,18 +614,12 @@ export const MindMapCanvas = forwardRef<MindMapCanvasHandle, MindMapCanvasProps>
             onMouseDown={(e) => {
               if (e.button === 0 && !isRoot && !isEditing) {
                 e.stopPropagation();
-                dragStartPos.current = { x: e.clientX, y: e.clientY };
-                setDraggingNodeId(node.id);
-                const svgPt = screenToSvg(e.clientX, e.clientY);
-                setDragOffset({ x: svgPt.x - (pos.x + pos.width / 2), y: svgPt.y - (pos.y + NODE_HEIGHT / 2) });
+                startNodeDrag(node.id, pos, e.clientX, e.clientY);
               }
             }}
             onTouchStart={(e) => {
               if (!isRoot && !isEditing && e.touches.length === 1) {
-                dragStartPos.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
-                setDraggingNodeId(node.id);
-                const svgPt = screenToSvg(e.touches[0].clientX, e.touches[0].clientY);
-                setDragOffset({ x: svgPt.x - (pos.x + pos.width / 2), y: svgPt.y - (pos.y + NODE_HEIGHT / 2) });
+                startNodeDrag(node.id, pos, e.touches[0].clientX, e.touches[0].clientY);
               }
             }}
           >
@@ -430,8 +636,6 @@ export const MindMapCanvas = forwardRef<MindMapCanvasHandle, MindMapCanvasProps>
             />
             {!isEditing && (
               <text
-                x={pos.x + pos.width / 2}
-                y={pos.y + pos.height / 2}
                 textAnchor="middle"
                 dominantBaseline="central"
                 fill={isRoot ? "white" : color}
@@ -439,50 +643,17 @@ export const MindMapCanvas = forwardRef<MindMapCanvasHandle, MindMapCanvasProps>
                 fontWeight={isRoot ? 700 : 500}
                 style={{ pointerEvents: "none", userSelect: "none" }}
               >
-                {node.text}
+                {pos.lines.map((line, index) => (
+                  <tspan key={index} x={textCenterX} y={firstLineY + index * LINE_HEIGHT}>
+                    {line}
+                  </tspan>
+                ))}
               </text>
             )}
-            {/* Comment & Hyperlink icons inside node at trailing corner */}
-            {(hasComment || hasHyperlink) && !isEditing && (
-              <g>
-                {hasComment && (
-                  <g>
-                    <title>{node.comment}</title>
-                    <text
-                      x={isRTLLayout ? pos.x + 5 : pos.x + pos.width - (hasHyperlink ? 18 : 10)}
-                      y={pos.y + 9}
-                      fontSize={8}
-                      fill={isRoot ? "rgba(255,255,255,0.8)" : "#d97706"}
-                      style={{ pointerEvents: "none" }}
-                    >💬</text>
-                  </g>
-                )}
-                {hasHyperlink && (
-                  <g
-                    className="cursor-pointer"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      if (node.hyperlink) {
-                        window.open(node.hyperlink, "_blank", "noopener,noreferrer");
-                      }
-                    }}
-                  >
-                    <title>{node.hyperlink}</title>
-                    <text
-                      x={isRTLLayout ? pos.x + 5 + (hasComment ? 10 : 0) : pos.x + pos.width - 10}
-                      y={pos.y + 9}
-                      fontSize={8}
-                      fill={isRoot ? "rgba(255,255,255,0.8)" : "#3b82f6"}
-                      style={{ pointerEvents: "auto" }}
-                    >🔗</text>
-                  </g>
-                )}
-              </g>
-            )}
+            {!isEditing && renderNodeIcons(node, pos, iconColor)}
           </g>
         );
 
-        // Inline editing
         if (isEditing) {
           elements.push(
             <foreignObject
@@ -492,22 +663,25 @@ export const MindMapCanvas = forwardRef<MindMapCanvasHandle, MindMapCanvasProps>
               width={pos.width - 4}
               height={pos.height - 4}
             >
-              <input
-                ref={foreignObjectInputRef}
-                type="text"
+              <textarea
+                ref={editInputRef}
                 value={editText}
                 onChange={(e) => setEditText(e.target.value)}
                 onKeyDown={(e) => {
+                  if (e.key === "Enter" && e.shiftKey) {
+                    // Shift+Enter inserts a line break instead of committing.
+                    e.stopPropagation();
+                    return;
+                  }
                   if (e.key === "Enter") {
+                    e.preventDefault();
                     onFinishEdit(node.id, editText.trim() || node.text);
                   } else if (e.key === "Escape") {
                     onFinishEdit(node.id, node.text);
                   }
                   e.stopPropagation();
                 }}
-                onBlur={() => {
-                  onFinishEdit(node.id, editText.trim() || node.text);
-                }}
+                onBlur={() => onFinishEdit(node.id, editText.trim() || node.text)}
                 onClick={(e) => e.stopPropagation()}
                 dir="auto"
                 style={{
@@ -515,13 +689,18 @@ export const MindMapCanvas = forwardRef<MindMapCanvasHandle, MindMapCanvasProps>
                   height: "100%",
                   border: "none",
                   outline: "none",
+                  resize: "none",
+                  overflow: "hidden",
                   background: isRoot ? color : "white",
                   color: isRoot ? "white" : color,
                   fontSize: isRoot ? "13px" : "12px",
+                  lineHeight: `${LINE_HEIGHT}px`,
                   fontWeight: isRoot ? 700 : 500,
                   textAlign: "center",
                   borderRadius: isRoot ? "8px" : "4px",
-                  padding: "0 4px",
+                  padding: `${Math.max(1, NODE_PADDING_Y - 2)}px ${Math.max(1, NODE_PADDING_X - 3)}px`,
+                  boxSizing: "border-box",
+                  fontFamily: "inherit",
                 }}
               />
             </foreignObject>
@@ -529,16 +708,11 @@ export const MindMapCanvas = forwardRef<MindMapCanvasHandle, MindMapCanvasProps>
         }
       }
 
-      // Plus button
       if (!isBeingDragged) {
-        let plusX: number;
+        const plusX = isRTLLayout
+          ? pos.x - PLUS_BUTTON_RADIUS - 4
+          : pos.x + pos.width + PLUS_BUTTON_RADIUS + 4;
         const plusY = pos.y + pos.height / 2;
-
-        if (isRTLLayout) {
-          plusX = pos.x - PLUS_BUTTON_RADIUS - 4;
-        } else {
-          plusX = pos.x + pos.width + PLUS_BUTTON_RADIUS + 4;
-        }
 
         elements.push(
           <g
@@ -554,33 +728,9 @@ export const MindMapCanvas = forwardRef<MindMapCanvasHandle, MindMapCanvasProps>
               onAddChild(node.id);
             }}
           >
-            <circle
-              cx={plusX}
-              cy={plusY}
-              r={PLUS_BUTTON_RADIUS}
-              fill="white"
-              stroke={color}
-              strokeWidth={1.5}
-              opacity={0.8}
-            />
-            <line
-              x1={plusX - 5}
-              y1={plusY}
-              x2={plusX + 5}
-              y2={plusY}
-              stroke={color}
-              strokeWidth={2}
-              strokeLinecap="round"
-            />
-            <line
-              x1={plusX}
-              y1={plusY - 5}
-              x2={plusX}
-              y2={plusY + 5}
-              stroke={color}
-              strokeWidth={2}
-              strokeLinecap="round"
-            />
+            <circle cx={plusX} cy={plusY} r={PLUS_BUTTON_RADIUS} fill="white" stroke={color} strokeWidth={1.5} opacity={0.85} />
+            <line x1={plusX - 5} y1={plusY} x2={plusX + 5} y2={plusY} stroke={color} strokeWidth={2} strokeLinecap="round" />
+            <line x1={plusX} y1={plusY - 5} x2={plusX} y2={plusY + 5} stroke={color} strokeWidth={2} strokeLinecap="round" />
           </g>
         );
       }
@@ -591,179 +741,159 @@ export const MindMapCanvas = forwardRef<MindMapCanvasHandle, MindMapCanvasProps>
       return elements;
     };
 
-    const handleGlobalMove = useCallback((clientX: number, clientY: number) => {
-      if (draggingNodeId && dragStartPos.current) {
-        const dx = clientX - dragStartPos.current.x;
-        const dy = clientY - dragStartPos.current.y;
-        if (!isDragActive.current && Math.sqrt(dx * dx + dy * dy) > 8) {
-          isDragActive.current = true;
-        }
-        if (isDragActive.current) {
-          const svgPt = screenToSvg(clientX, clientY);
-          const nodeX = svgPt.x - dragOffset.x;
-          const nodeY = svgPt.y - dragOffset.y;
-          setDragPos({ x: nodeX, y: nodeY });
-
-          const excludeIds = getDescendantIds(root, draggingNodeId);
-          // For proximity: use the connecting edge of the dragged node
-          let proximityX: number;
-          if (isRTLLayout) {
-            // RTL: left edge of moving node seeks right edge of target (which is pos.x for target's child-connect side)
-            proximityX = nodeX - 30;
-          } else {
-            // LTR: right edge of moving node seeks left edge of target
-            proximityX = nodeX + 30;
-          }
-          const nearest = findNearestNode(proximityX, nodeY, excludeIds);
-          setNearestParentId(nearest);
-        }
+    const handleDragMove = useCallback((clientX: number, clientY: number) => {
+      if (!draggingNodeId || !dragStartPos.current) return;
+      const dx = clientX - dragStartPos.current.x;
+      const dy = clientY - dragStartPos.current.y;
+      if (!isDragActive.current && Math.sqrt(dx * dx + dy * dy) > 8) {
+        isDragActive.current = true;
       }
-    }, [draggingNodeId, dragOffset, screenToSvg, getDescendantIds, root, findNearestNode, isRTLLayout]);
+      if (!isDragActive.current) return;
 
-    const handleGlobalUp = useCallback(() => {
+      const local = toLocalPoint(clientX, clientY);
+      const svgPoint = localToSvg(local.x, local.y);
+      const nodeX = svgPoint.x - dragOffset.current.x;
+      const nodeY = svgPoint.y - dragOffset.current.y;
+      setDragPos({ x: nodeX, y: nodeY });
+
+      const excludeIds = getDescendantIds(root, draggingNodeId);
+      const draggedWidth = positions.find((p) => p.id === draggingNodeId)?.width ?? NODE_MIN_WIDTH;
+      const probeX = isRTLLayout ? nodeX - draggedWidth / 2 : nodeX + draggedWidth / 2;
+      setNearestParentId(findNearestNode(probeX, nodeY, excludeIds));
+    }, [draggingNodeId, toLocalPoint, localToSvg, getDescendantIds, root, findNearestNode, isRTLLayout, positions]);
+
+    const finishInteraction = useCallback(() => {
       if (draggingNodeId && isDragActive.current && nearestParentId) {
         onReparentNode(draggingNodeId, nearestParentId);
       }
-      setDraggingNodeId(null);
-      setNearestParentId(null);
-      isDragActive.current = false;
-      dragStartPos.current = null;
+      cancelDrag();
       setIsPanning(false);
-    }, [draggingNodeId, nearestParentId, onReparentNode]);
+    }, [draggingNodeId, nearestParentId, onReparentNode, cancelDrag]);
 
     const handleWheel = (e: React.WheelEvent) => {
       e.preventDefault();
-      const delta = e.deltaY > 0 ? -0.1 : 0.1;
-      setZoom((prev) => Math.max(0.3, Math.min(3, prev + delta)));
+      const local = toLocalPoint(e.clientX, e.clientY);
+      const factor = e.deltaY > 0 ? 0.92 : 1.08;
+      applyZoom(factor, local.x, local.y);
+    };
+
+    const isBackgroundTarget = (target: EventTarget | null) => {
+      const el = target as SVGElement | null;
+      if (!el) return false;
+      return el.tagName === "svg" || (el.tagName === "rect" && el.getAttribute("data-bg") === "true");
     };
 
     const handleMouseDown = (e: React.MouseEvent) => {
-      if (e.button === 0 && !draggingNodeId) {
-        const target = e.target as SVGElement;
-        if (target.tagName === "svg" || (target.tagName === "rect" && target.getAttribute("data-bg") === "true")) {
-          setIsPanning(true);
-          setPanStart({ x: e.clientX - pan.x, y: e.clientY - pan.y });
-        }
+      if (e.button === 0 && !draggingNodeId && isBackgroundTarget(e.target)) {
+        const local = toLocalPoint(e.clientX, e.clientY);
+        panStartRef.current = { x: local.x - panRef.current.x, y: local.y - panRef.current.y };
+        setIsPanning(true);
       }
     };
 
     const handleMouseMove = (e: React.MouseEvent) => {
       if (draggingNodeId) {
-        handleGlobalMove(e.clientX, e.clientY);
+        handleDragMove(e.clientX, e.clientY);
       } else if (isPanning) {
-        setPan({ x: e.clientX - panStart.x, y: e.clientY - panStart.y });
+        const local = toLocalPoint(e.clientX, e.clientY);
+        const next = { x: local.x - panStartRef.current.x, y: local.y - panStartRef.current.y };
+        panRef.current = next;
+        setPan(next);
       }
     };
 
-    const handleMouseUp = () => {
-      handleGlobalUp();
+    const handleTouchStart = (e: React.TouchEvent) => {
+      if (e.touches.length >= 2) {
+        // Two fingers means pinch: abandon any node drag or pan in progress.
+        cancelDrag();
+        setIsPanning(false);
+        const [a, b] = [e.touches[0], e.touches[1]];
+        const distance = Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY);
+        pinchDistance.current = distance > 1 ? distance : null;
+        pinchCenter.current = toLocalPoint((a.clientX + b.clientX) / 2, (a.clientY + b.clientY) / 2);
+        return;
+      }
+
+      if (e.touches.length === 1 && !draggingNodeId && isBackgroundTarget(e.target)) {
+        const local = toLocalPoint(e.touches[0].clientX, e.touches[0].clientY);
+        panStartRef.current = { x: local.x - panRef.current.x, y: local.y - panRef.current.y };
+        setIsPanning(true);
+      }
     };
 
-    const handleTouchStart = useCallback((e: React.TouchEvent) => {
-      if (e.touches.length === 1 && !draggingNodeId) {
-        const target = e.target as SVGElement;
-        if (target.tagName === "svg" || (target.tagName === "rect" && target.getAttribute("data-bg") === "true")) {
-          setIsPanning(true);
-          setPanStart({ x: e.touches[0].clientX - pan.x, y: e.touches[0].clientY - pan.y });
+    const handleTouchMove = (e: React.TouchEvent) => {
+      if (e.cancelable) e.preventDefault();
+
+      if (e.touches.length >= 2) {
+        const [a, b] = [e.touches[0], e.touches[1]];
+        const distance = Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY);
+        const center = toLocalPoint((a.clientX + b.clientX) / 2, (a.clientY + b.clientY) / 2);
+
+        const previousDistance = pinchDistance.current;
+        if (previousDistance && previousDistance > 1 && distance > 1) {
+          applyZoom(distance / previousDistance, center.x, center.y);
         }
-      } else if (e.touches.length === 2) {
-        const dx = e.touches[0].clientX - e.touches[1].clientX;
-        const dy = e.touches[0].clientY - e.touches[1].clientY;
-        lastTouchDistance.current = Math.sqrt(dx * dx + dy * dy);
-        lastTouchCenter.current = {
-          x: (e.touches[0].clientX + e.touches[1].clientX) / 2,
-          y: (e.touches[0].clientY + e.touches[1].clientY) / 2,
-        };
-      }
-    }, [pan.x, pan.y, draggingNodeId]);
-
-    const handleTouchMove = useCallback((e: React.TouchEvent) => {
-      e.preventDefault();
-      if (draggingNodeId && e.touches.length === 1) {
-        handleGlobalMove(e.touches[0].clientX, e.touches[0].clientY);
-      } else if (e.touches.length === 1 && isPanning) {
-        setPan({
-          x: e.touches[0].clientX - panStart.x,
-          y: e.touches[0].clientY - panStart.y,
-        });
-      } else if (e.touches.length === 2 && lastTouchDistance.current !== null) {
-        const dx = e.touches[0].clientX - e.touches[1].clientX;
-        const dy = e.touches[0].clientY - e.touches[1].clientY;
-        const distance = Math.sqrt(dx * dx + dy * dy);
-        const scale = distance / lastTouchDistance.current;
-        setZoom((prev) => Math.max(0.3, Math.min(3, prev * scale)));
-        lastTouchDistance.current = distance;
-
-        const center = {
-          x: (e.touches[0].clientX + e.touches[1].clientX) / 2,
-          y: (e.touches[0].clientY + e.touches[1].clientY) / 2,
-        };
-        if (lastTouchCenter.current) {
-          setPan((prev) => ({
-            x: prev.x + (center.x - lastTouchCenter.current!.x),
-            y: prev.y + (center.y - lastTouchCenter.current!.y),
-          }));
+        if (pinchCenter.current) {
+          movePan(center.x - pinchCenter.current.x, center.y - pinchCenter.current.y);
         }
-        lastTouchCenter.current = center;
+        pinchDistance.current = distance > 1 ? distance : null;
+        pinchCenter.current = center;
+        return;
       }
-    }, [draggingNodeId, isPanning, panStart.x, panStart.y, handleGlobalMove]);
 
-    const handleTouchEnd = useCallback(() => {
-      handleGlobalUp();
-      lastTouchDistance.current = null;
-      lastTouchCenter.current = null;
-    }, [handleGlobalUp]);
+      if (e.touches.length === 1) {
+        if (draggingNodeId) {
+          handleDragMove(e.touches[0].clientX, e.touches[0].clientY);
+        } else if (isPanning) {
+          const local = toLocalPoint(e.touches[0].clientX, e.touches[0].clientY);
+          const next = { x: local.x - panStartRef.current.x, y: local.y - panStartRef.current.y };
+          panRef.current = next;
+          setPan(next);
+        }
+      }
+    };
+
+    const handleTouchEnd = (e: React.TouchEvent) => {
+      if (e.touches.length < 2) {
+        pinchDistance.current = null;
+        pinchCenter.current = null;
+      }
+      if (e.touches.length === 0) {
+        finishInteraction();
+      }
+    };
 
     useEffect(() => {
-      const up = () => handleGlobalUp();
+      const up = () => finishInteraction();
       window.addEventListener("mouseup", up);
-      window.addEventListener("touchend", up);
+      window.addEventListener("touchcancel", up);
       return () => {
         window.removeEventListener("mouseup", up);
-        window.removeEventListener("touchend", up);
+        window.removeEventListener("touchcancel", up);
       };
-    }, [handleGlobalUp]);
+    }, [finishInteraction]);
 
-    const handleCenter = () => {
-      setZoom(1);
-      if (containerRef.current) {
-        const containerWidth = containerRef.current.clientWidth;
-        if (isRTLLayout) {
-          const treeWidth = maxX - minX;
-          const offsetX = containerWidth - treeWidth - 60;
-          setPan({ x: offsetX - minX, y: 40 });
-        } else {
-          setPan({ x: 40, y: 40 });
-        }
-      }
-    };
+    const controlClass =
+      "w-10 h-10 sm:w-8 sm:h-8 bg-white rounded-lg shadow-md border border-slate-200 flex items-center justify-center text-slate-600 hover:bg-slate-50 active:bg-slate-100 cursor-pointer transition-colors duration-150";
 
     return (
       <div ref={containerRef} className="relative flex-1 overflow-hidden bg-slate-50 h-full min-h-0 touch-none">
-        {/* Zoom controls - left side for RTL, right side for LTR */}
+        {/* Zoom controls sit on the side opposite to the tree growth direction */}
         <div className={`absolute top-3 z-40 flex flex-col gap-2 ${isRTLLayout ? "left-3" : "right-3"}`}>
-          <button
-            onClick={() => setZoom((z) => Math.min(3, z + 0.2))}
-            className="w-10 h-10 sm:w-8 sm:h-8 bg-white rounded-lg shadow-md border border-slate-200 flex items-center justify-center text-slate-600 hover:bg-slate-50 active:bg-slate-100 cursor-pointer transition-colors duration-150 text-xl sm:text-lg font-medium"
-          >
-            +
+          <button onClick={() => zoomFromButton(1.2)} className={controlClass} title={labels.zoomIn} aria-label={labels.zoomIn}>
+            <Plus className="w-4 h-4" />
           </button>
-          <button
-            onClick={() => setZoom((z) => Math.max(0.3, z - 0.2))}
-            className="w-10 h-10 sm:w-8 sm:h-8 bg-white rounded-lg shadow-md border border-slate-200 flex items-center justify-center text-slate-600 hover:bg-slate-50 active:bg-slate-100 cursor-pointer transition-colors duration-150 text-xl sm:text-lg font-medium"
-          >
-            −
+          <button onClick={() => zoomFromButton(1 / 1.2)} className={controlClass} title={labels.zoomOut} aria-label={labels.zoomOut}>
+            <Minus className="w-4 h-4" />
           </button>
-          <button
-            onClick={handleCenter}
-            className="w-10 h-10 sm:w-8 sm:h-8 bg-white rounded-lg shadow-md border border-slate-200 flex items-center justify-center text-slate-600 hover:bg-slate-50 active:bg-slate-100 cursor-pointer transition-colors duration-150 text-sm"
-            title="Center"
-          >
-            ⊙
+          <button onClick={resetView} className={controlClass} title={labels.resetView} aria-label={labels.resetView}>
+            <Crosshair className="w-4 h-4" />
+          </button>
+          <button onClick={fitToScreen} className={controlClass} title={labels.fitToScreen} aria-label={labels.fitToScreen}>
+            <Maximize2 className="w-4 h-4" />
           </button>
         </div>
 
-        {/* Zoom indicator */}
         <div className={`absolute bottom-3 z-40 text-xs text-slate-400 bg-white/80 px-2 py-1 rounded ${isRTLLayout ? "left-3" : "right-3"}`}>
           {Math.round(zoom * 100)}%
         </div>
@@ -777,25 +907,20 @@ export const MindMapCanvas = forwardRef<MindMapCanvasHandle, MindMapCanvasProps>
           onWheel={handleWheel}
           onMouseDown={handleMouseDown}
           onMouseMove={handleMouseMove}
-          onMouseUp={handleMouseUp}
+          onMouseUp={finishInteraction}
           onTouchStart={handleTouchStart}
           onTouchMove={handleTouchMove}
           onTouchEnd={handleTouchEnd}
-          onClick={() => { if (!isDragActive.current) onSelectNode(""); }}
+          onClick={() => {
+            if (!isDragActive.current) onSelectNode("");
+          }}
         >
           <defs>
             <filter id="selectedShadow" x="-20%" y="-20%" width="140%" height="140%">
               <feDropShadow dx="0" dy="2" stdDeviation="4" floodOpacity="0.2" />
             </filter>
           </defs>
-          <rect
-            data-bg="true"
-            x="0"
-            y="0"
-            width="100%"
-            height="100%"
-            fill="transparent"
-          />
+          <rect data-bg="true" x="0" y="0" width="100%" height="100%" fill="transparent" />
           <g transform={`translate(${pan.x}, ${pan.y}) scale(${zoom})`}>
             {renderConnections(root)}
             {renderDragConnection()}

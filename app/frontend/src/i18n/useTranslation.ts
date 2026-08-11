@@ -10,11 +10,11 @@ export interface I18nContextType {
 }
 
 export const I18nContext = createContext<I18nContextType>({
-  language: "fa",
+  language: "en",
   setLanguage: () => {},
-  t: translations.fa,
-  isRTL: true,
-  dir: "rtl",
+  t: translations.en,
+  isRTL: false,
+  dir: "ltr",
 });
 
 export function useTranslation(): I18nContextType {
