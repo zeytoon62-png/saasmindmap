@@ -1,0 +1,24 @@
+{
+    "title": "site_settings",
+    "type": "object",
+    "properties": {
+        "id": {
+            "type": "integer",
+            "description": "Auto-increment primary key"
+        },
+        "setting_key": {
+            "type": "string",
+            "maxLength": 100,
+            "description": "Unique setting identifier"
+        },
+        "setting_value": {
+            "type": "string",
+            "maxLength": 4096,
+            "description": "Setting value (text, email, JSON, etc.)"
+        }
+    },
+    "required": [
+        "setting_key",
+        "setting_value"
+    ]
+}

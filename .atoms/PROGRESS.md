@@ -22,6 +22,10 @@ last_updated: 2026-08-10T03:01:36Z
 - [x] Text format toolbar: align left/center/right, RTL/LTR, numbered/bulleted lists, bold, font size
 - [x] Save submenu with JSON, Markdown, JPG, PNG, SVG, PDF formats
 - [x] www.pmindmap.com in JSON/Markdown headers and at the bottom of image/PDF exports
+- [x] About Us popup in sidebar with dynamic text from DB + Telegram link + Financial Support button
+- [x] Support Us (crypto donation) section in sidebar with wallet selector + QR code + copy address
+- [x] Enhanced Feedback system: normal/urgent types, Telegram contact, sent to different emails
+- [x] Admin panel at /manager with login, credential change, admin CRUD, settings, wallets, feedbacks, reports dashboard with date filter
 
 ## Progress Log
 - All 8 tasks completed: i18n, RTL/LTR fix, auto-save, save/save-as, comments, hyperlinks, feedback, language switcher
@@ -30,4 +34,5 @@ last_updated: 2026-08-10T03:01:36Z
 - Round 3 backend: feedbacks/visitor_logs/report_runs tables, /api/v1/reports feedback + visitor-log + run-weekly-report endpoints, SMTP weekly email to the configured address with one-send-per-week guard and data clearing after success
 - Round 5: parent-color inheritance for new nodes, Delete/Enter/Tab node shortcuts on desktop, per-node text formatting (align, RTL/LTR, lists, bold, font size), save submenu with JSON/Markdown/JPG/PNG/SVG/PDF export, website stamp in file headers (JSON/Markdown) and at the bottom of images/PDF
 - Round 4: halved node text padding, Shift+Enter multi-line editing, English default language plus Chinese and Russian, language dropdown selector, page title "Personal Mind Map", collapsible desktop sidebar with persisted state, localStorage project restore on refresh plus beforeunload unsaved warning and toolbar unsaved badge, fixed non-zooming top toolbar with preventScroll focus, fit-to-screen zoom button, redesigned color palette with spaced swatches and custom color picker
+- Round 6: Enhanced /manager panel with: (1) Multilingual About Us editor (6 languages with RTL support for fa/ar), (2) Full SMTP configuration fields (host/port/user/pass/from), (3) Email recipients + batch schedule settings with manual send-batch button, (4) Email sending logs table in dashboard, (5) QR image upload for wallets via Object Storage with preview in both Manager and Toolbar Support Us modal, (6) Toolbar About Us now reads language-specific text from settings
 

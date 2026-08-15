@@ -3,15 +3,12 @@ from datetime import datetime
 from sqlalchemy import Column, DateTime, Integer, String
 
 
-class Feedbacks(Base):
-    __tablename__ = "feedbacks"
+class Site_settings(Base):
+    __tablename__ = "site_settings"
     __table_args__ = {"extend_existing": True}
 
     id = Column(Integer, primary_key=True, index=True, autoincrement=True, nullable=False)
-    message = Column(String, nullable=False)
-    feedback_type = Column(String(20), nullable=True, default='normal', server_default='normal')
-    contact_info = Column(String, nullable=True)
-    device_info = Column(String, nullable=True)
-    ip_address = Column(String, nullable=True)
+    setting_key = Column(String(100), nullable=False)
+    setting_value = Column(String(4096), nullable=False)
     created_at = Column(DateTime(timezone=True), default=datetime.now)
     updated_at = Column(DateTime(timezone=True), default=datetime.now, onupdate=datetime.now)

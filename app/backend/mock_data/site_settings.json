@@ -1,0 +1,30 @@
+[
+    {
+        "setting_key": "about_us_text",
+        "setting_value": "گروه فنی هنری انعکاس با هدف ارایه خدمات رایگان کوچک ولی مفید به شما کاربر گرامی اقدام به توسعه این سرویس نموده است. استفاده از این سرویس کاملا رایگان است. برای تداوم این سرویس از ما حمایت و ما را به دیگران معرفی کنید. برای هرگونه ارتباط با ما از این آیدی در تلگرام استفاده کنید: pmindmap"
+    },
+    {
+        "setting_key": "feedback_normal_email_1",
+        "setting_value": "feedback@pmindmap.com"
+    },
+    {
+        "setting_key": "feedback_normal_email_2",
+        "setting_value": ""
+    },
+    {
+        "setting_key": "feedback_urgent_email_1",
+        "setting_value": "urgent@pmindmap.com"
+    },
+    {
+        "setting_key": "feedback_urgent_email_2",
+        "setting_value": ""
+    },
+    {
+        "setting_key": "feedback_schedule",
+        "setting_value": "daily"
+    },
+    {
+        "setting_key": "telegram_support",
+        "setting_value": "pmindmap"
+    }
+]

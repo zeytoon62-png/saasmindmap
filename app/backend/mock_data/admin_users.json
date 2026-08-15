@@ -1,0 +1,8 @@
+[
+    {
+        "username": "administrator",
+        "password_hash": "$2b$12$NbN93WoKnZZrhVyeyMMn5OGIDXuew16UmmYWVaW35Mnrc6I8nzWRG",
+        "role": "superadmin",
+        "is_active": true
+    }
+]

@@ -8,6 +8,7 @@ from core.database import get_db
 from services.feedbacks import FeedbacksService
 from services.visitor_logs import Visitor_logsService
 from services.weekly_report import WeeklyReportService
+from services.email_service import EmailService
 
 logger = logging.getLogger(__name__)
 
@@ -16,6 +17,7 @@ router = APIRouter(prefix="/api/v1/reports", tags=["reports"])
 
 class FeedbackRequest(BaseModel):
     message: str
+    feedback_type: Optional[str] = "normal"
     contact_info: Optional[str] = None
     device_info: Optional[str] = None
 
@@ -56,10 +58,24 @@ async def submit_feedback(
         service = FeedbacksService(db)
         await service.create({
             "message": data.message,
+            "feedback_type": data.feedback_type or "normal",
             "contact_info": data.contact_info or "",
             "device_info": data.device_info or "",
             "ip_address": ip_address,
         })
+
+        # If urgent, send email immediately
+        if data.feedback_type == "urgent":
+            try:
+                email_service = EmailService(db)
+                await email_service.send_urgent_feedback(
+                    message=data.message,
+                    contact_info=data.contact_info or "",
+                    device_info=data.device_info or "",
+                )
+            except Exception as email_err:
+                logger.error(f"Failed to send urgent email: {email_err}")
+
         return SuccessResponse(success=True, message="Feedback submitted successfully")
     except Exception as e:
         logger.error(f"Failed to submit feedback: {e}")

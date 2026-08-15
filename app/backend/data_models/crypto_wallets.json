@@ -1,0 +1,39 @@
+{
+    "title": "crypto_wallets",
+    "type": "object",
+    "properties": {
+        "id": {
+            "type": "integer",
+            "description": "Auto-increment primary key"
+        },
+        "crypto_name": {
+            "type": "string",
+            "maxLength": 100,
+            "description": "Name of the cryptocurrency e.g. Bitcoin, Ethereum"
+        },
+        "wallet_address": {
+            "type": "string",
+            "maxLength": 512,
+            "description": "Wallet address for receiving donations"
+        },
+        "qr_code_url": {
+            "type": "string",
+            "maxLength": 1024,
+            "description": "URL or data URI of QR code image"
+        },
+        "is_active": {
+            "type": "boolean",
+            "default": true,
+            "description": "Whether this wallet is visible to users"
+        },
+        "display_order": {
+            "type": "integer",
+            "default": 0,
+            "description": "Order for display in the donation section"
+        }
+    },
+    "required": [
+        "crypto_name",
+        "wallet_address"
+    ]
+}

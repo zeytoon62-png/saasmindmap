@@ -10,17 +10,23 @@
             "type": "string",
             "description": "Feedback message text"
         },
+        "feedback_type": {
+            "type": "string",
+            "maxLength": 20,
+            "default": "normal",
+            "description": "Type: normal or urgent"
+        },
         "contact_info": {
             "type": "string",
-            "description": "User contact information (email, phone, etc.)"
+            "description": "Optional contact info"
         },
         "device_info": {
             "type": "string",
-            "description": "Device and browser information"
+            "description": "Device information"
         },
         "ip_address": {
             "type": "string",
-            "description": "IP address of the user"
+            "description": "Submitter IP address"
         }
     },
     "required": [

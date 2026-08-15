@@ -15,3 +15,11 @@ v3
     12. When the user clicks the Save button, a separate menu or submenu should appear, prompting the user to choose the save format. The user should be able to save as JSON, Markdown, JPG, PNG, SVG, and PDF.
     13. For JSON and Markdown files, the website address www.pmindmap.com must be included in the file header.
     14. For the other formats (images and PDF), the website address should be placed at the bottom of the output image or document.
+
+v4
+
+ The following features added:
+	1. About Us Section in Sidebar
+	2. Cryptocurrency Donation Section in Sidebar
+	3. Feedback System in Sidebar
+	4. Admin/Management Panel

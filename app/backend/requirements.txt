@@ -32,5 +32,8 @@ openai==2.16.0
 sse-starlette>=1.6.0
 PyMuPDF
 
+# password hashing
+bcrypt>=4.0.0
+
 # payment module dependencies
 stripe>=12.0.0

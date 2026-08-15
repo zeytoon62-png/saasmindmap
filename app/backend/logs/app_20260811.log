@@ -752,3 +752,28 @@
 2026-08-11 12:06:52,386 - services.mock_data - INFO - Ignore initialize data
 2026-08-11 12:06:52,386 - services.auth - INFO - Ignore initialize admin
 2026-08-11 12:06:52,386 - main - INFO - === Application startup completed successfully ===
+2026-08-11 12:35:21,313 - services.database - DEBUG - [DB_OP] Starting database close
+2026-08-11 12:35:21,313 - services.database - INFO - Database connections closed
+2026-08-11 12:35:21,313 - services.database - DEBUG - [DB_OP] Database close completed in 0.0005s
+2026-08-11 12:39:48,527 - main - INFO - === Logging system initialized ===
+2026-08-11 12:39:48,527 - main - INFO - Log file: logs/app_20260811.log
+2026-08-11 12:39:48,527 - main - INFO - Log level: DEBUG
+2026-08-11 12:39:48,527 - main - INFO - Log date: 20260811
+2026-08-11 12:39:48,627 - main - INFO - Included router: routers.aihub.router
+2026-08-11 12:39:48,639 - main - INFO - Included router: routers.auth.router
+2026-08-11 12:39:48,744 - main - INFO - Included router: routers.feedbacks.router
+2026-08-11 12:39:48,746 - main - INFO - Included router: routers.health.router
+2026-08-11 12:39:48,773 - main - INFO - Included router: routers.report_runs.router
+2026-08-11 12:39:48,802 - main - INFO - Included router: routers.reports.router
+2026-08-11 12:39:48,821 - main - INFO - Included router: routers.settings.router
+2026-08-11 12:39:48,844 - main - INFO - Included router: routers.storage.router
+2026-08-11 12:39:48,850 - main - INFO - Included router: routers.user.router
+2026-08-11 12:39:48,872 - main - INFO - Included router: routers.visitor_logs.router
+2026-08-11 12:39:48,873 - main - INFO - === Application startup initiated ===
+2026-08-11 12:39:48,873 - services.database - INFO - Ignore database initialization
+2026-08-11 12:39:48,873 - services.mock_data - INFO - Ignore initialize data
+2026-08-11 12:39:48,874 - services.auth - INFO - Ignore initialize admin
+2026-08-11 12:39:48,874 - main - INFO - === Application startup completed successfully ===
+2026-08-11 12:50:01,004 - services.database - DEBUG - [DB_OP] Starting database close
+2026-08-11 12:50:01,004 - services.database - INFO - Database connections closed
+2026-08-11 12:50:01,004 - services.database - DEBUG - [DB_OP] Database close completed in 0.0005s

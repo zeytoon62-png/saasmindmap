@@ -1,0 +1,35 @@
+{
+    "title": "admin_users",
+    "type": "object",
+    "properties": {
+        "id": {
+            "type": "integer",
+            "description": "Auto-increment primary key"
+        },
+        "username": {
+            "type": "string",
+            "maxLength": 100,
+            "description": "Admin login username"
+        },
+        "password_hash": {
+            "type": "string",
+            "maxLength": 512,
+            "description": "Bcrypt hashed password"
+        },
+        "role": {
+            "type": "string",
+            "maxLength": 50,
+            "default": "admin",
+            "description": "Role: admin or superadmin"
+        },
+        "is_active": {
+            "type": "boolean",
+            "default": true,
+            "description": "Whether this admin account is active"
+        }
+    },
+    "required": [
+        "username",
+        "password_hash"
+    ]
+}

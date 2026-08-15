@@ -3,15 +3,16 @@ from datetime import datetime
 from sqlalchemy import Column, DateTime, Integer, String
 
 
-class Feedbacks(Base):
-    __tablename__ = "feedbacks"
+class Email_logs(Base):
+    __tablename__ = "email_logs"
     __table_args__ = {"extend_existing": True}
 
     id = Column(Integer, primary_key=True, index=True, autoincrement=True, nullable=False)
-    message = Column(String, nullable=False)
-    feedback_type = Column(String(20), nullable=True, default='normal', server_default='normal')
-    contact_info = Column(String, nullable=True)
-    device_info = Column(String, nullable=True)
-    ip_address = Column(String, nullable=True)
+    subject = Column(String(512), nullable=False)
+    recipients = Column(String(1024), nullable=False)
+    body_preview = Column(String(2048), nullable=False)
+    email_type = Column(String(50), nullable=False)
+    status = Column(String(20), nullable=False, default='sent', server_default='sent')
+    sent_at = Column(DateTime(timezone=True), nullable=True)
     created_at = Column(DateTime(timezone=True), default=datetime.now)
     updated_at = Column(DateTime(timezone=True), default=datetime.now, onupdate=datetime.now)

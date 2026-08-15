@@ -1,0 +1,48 @@
+{
+    "title": "email_logs",
+    "type": "object",
+    "properties": {
+        "id": {
+            "type": "integer",
+            "description": "Auto-increment primary key"
+        },
+        "subject": {
+            "type": "string",
+            "description": "Email subject line",
+            "maxLength": 512
+        },
+        "recipients": {
+            "type": "string",
+            "description": "Comma-separated recipient email addresses",
+            "maxLength": 1024
+        },
+        "body_preview": {
+            "type": "string",
+            "description": "Preview of email body content",
+            "maxLength": 2048
+        },
+        "email_type": {
+            "type": "string",
+            "description": "Type of email: normal_batch or urgent_immediate",
+            "maxLength": 50
+        },
+        "status": {
+            "type": "string",
+            "description": "Send status: sent, failed",
+            "maxLength": 20,
+            "default": "sent"
+        },
+        "sent_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Timestamp when email was dispatched"
+        }
+    },
+    "required": [
+        "subject",
+        "recipients",
+        "body_preview",
+        "email_type",
+        "status"
+    ]
+}
