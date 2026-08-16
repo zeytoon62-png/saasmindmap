@@ -89,6 +89,7 @@ export default function Index() {
     isModified,
     addChild,
     addSiblingBefore,
+    addSiblingAfter,
     deleteNode,
     updateNodeText,
     updateNodeColor,
@@ -96,6 +97,8 @@ export default function Index() {
     updateNodeComment,
     updateNodeHyperlink,
     reparentNode,
+    moveNodeUp,
+    moveNodeDown,
     loadFromJSON,
     resetMap,
     findNode,
@@ -227,24 +230,25 @@ export default function Index() {
   }, [lastCreatedNodeId, setLastCreatedNodeId]);
 
   /** Export the current map in the format chosen from the save submenu. */
-  const handleSave = useCallback(async (format: SaveFormat) => {
+  const handleSave = useCallback(async (format: SaveFormat, fileName?: string) => {
+    const baseName = fileName?.trim() || "mindmap";
     try {
       if (format === "json") {
-        downloadTextFile(buildJSONString(data), "mindmap.json", "application/json");
+        downloadTextFile(buildJSONString(data), `${baseName}.json`, "application/json");
       } else if (format === "markdown") {
-        downloadTextFile(buildMarkdownString(data), "mindmap.md", "text/markdown");
+        downloadTextFile(buildMarkdownString(data), `${baseName}.md`, "text/markdown");
       } else if (format === "svg") {
         const svg = canvasHandle.current?.exportToSvgString();
         if (!svg) return;
-        downloadTextFile(svg, "mindmap.svg", "image/svg+xml");
+        downloadTextFile(svg, `${baseName}.svg`, "image/svg+xml");
       } else if (format === "png" || format === "jpg") {
         const result = await canvasHandle.current?.exportToImage(format === "jpg" ? "jpeg" : "png");
         if (!result) return;
-        downloadDataUrl(result.dataUrl, format === "jpg" ? "mindmap.jpg" : "mindmap.png");
+        downloadDataUrl(result.dataUrl, format === "jpg" ? `${baseName}.jpg` : `${baseName}.png`);
       } else if (format === "pdf") {
         const result = await canvasHandle.current?.exportToImage("png");
         if (!result) return;
-        await exportPdf(result.dataUrl, result.width, result.height, "mindmap.pdf");
+        await exportPdf(result.dataUrl, result.width, result.height, `${baseName}.pdf`);
       }
       markSaved();
       setHasUnsavedChanges(false);
@@ -310,17 +314,24 @@ export default function Index() {
       if (e.key === "Delete") {
         e.preventDefault();
         if (selectedNodeId !== data.root.id) deleteNode(selectedNodeId);
-      } else if (e.key === "Enter") {
+      } else if (e.key === "Enter" && e.shiftKey) {
+        // Shift+Enter: add child node (in front of selected node)
         e.preventDefault();
         addChild(selectedNodeId);
-      } else if (e.key === "Tab") {
+      } else if (e.key === "Enter") {
+        // Enter: add sibling below the selected node (under same parent).
+        // If root is selected (no parent), fall back to adding a child.
         e.preventDefault();
-        addSiblingBefore(selectedNodeId);
+        if (selectedNodeId === data.root.id) {
+          addChild(selectedNodeId);
+        } else {
+          addSiblingAfter(selectedNodeId);
+        }
       }
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [undo, redo, handleSave, selectedNodeId, editingNodeId, data.root.id, deleteNode, addChild, addSiblingBefore]);
+  }, [undo, redo, handleSave, selectedNodeId, editingNodeId, data.root.id, deleteNode, addChild, addSiblingAfter]);
 
   useEffect(() => {
     document.documentElement.dir = isRTLDir ? "rtl" : "ltr";
@@ -364,6 +375,9 @@ export default function Index() {
             onLanguageChange={handleLanguageChange}
             sidebarOpen={sidebarOpen}
             onToggleSidebar={() => setSidebarOpen((open) => !open)}
+            onMoveNodeUp={moveNodeUp}
+            onMoveNodeDown={moveNodeDown}
+            mapData={data}
           />
 
           <div className="flex-1 relative min-h-0 overflow-hidden">

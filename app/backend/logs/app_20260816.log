@@ -1,0 +1,871 @@
+2026-08-16 03:29:14,056 - main - INFO - === Logging system initialized ===
+2026-08-16 03:29:14,056 - main - INFO - Log file: logs/app_20260816.log
+2026-08-16 03:29:14,056 - main - INFO - Log level: DEBUG
+2026-08-16 03:29:14,056 - main - INFO - Log date: 20260816
+2026-08-16 03:29:14,737 - main - INFO - Included router: routers.admin.router
+2026-08-16 03:29:14,780 - main - INFO - Included router: routers.admin_users.router
+2026-08-16 03:29:15,050 - main - INFO - Included router: routers.aihub.router
+2026-08-16 03:29:15,209 - main - INFO - Included router: routers.auth.router
+2026-08-16 03:29:15,244 - main - INFO - Included router: routers.crypto_wallets.router
+2026-08-16 03:29:15,313 - main - INFO - Included router: routers.email_logs.router
+2026-08-16 03:29:15,357 - main - INFO - Included router: routers.feedbacks.router
+2026-08-16 03:29:15,376 - main - INFO - Included router: routers.health.router
+2026-08-16 03:29:15,491 - main - INFO - Included router: routers.report_runs.router
+2026-08-16 03:29:15,561 - main - INFO - Included router: routers.reports.router
+2026-08-16 03:29:15,606 - main - INFO - Included router: routers.settings.router
+2026-08-16 03:29:15,642 - main - INFO - Included router: routers.site_settings.router
+2026-08-16 03:29:15,843 - main - INFO - Included router: routers.storage.router
+2026-08-16 03:29:15,927 - main - INFO - Included router: routers.user.router
+2026-08-16 03:29:16,033 - main - INFO - Included router: routers.visitor_logs.router
+2026-08-16 03:29:16,034 - main - INFO - === Application startup initiated ===
+2026-08-16 03:29:16,034 - services.database - INFO - Ignore database initialization
+2026-08-16 03:29:16,034 - services.mock_data - INFO - Ignore initialize data
+2026-08-16 03:29:16,035 - services.auth - INFO - Ignore initialize admin
+2026-08-16 03:29:16,035 - main - INFO - === Application startup completed successfully ===
+2026-08-16 03:36:31,657 - core.database - DEBUG - [DB_OP] Starting get_db session creation
+2026-08-16 03:36:31,657 - core.database - WARNING - Database session maker not available, attempting lazy initialization...
+2026-08-16 03:36:31,657 - core.database - WARNING - Database not initialized, attempting lazy initialization...
+2026-08-16 03:36:31,657 - core.database - INFO - Starting database initialization...
+2026-08-16 03:36:31,658 - core.config - DEBUG - Read dynamic attribute database_url from environment variable DATABASE_URL
+2026-08-16 03:36:31,658 - core.database - INFO - Normalizing database URL for async compatibility...
+2026-08-16 03:36:31,658 - core.database - INFO - Creating async database engine...
+2026-08-16 03:36:31,659 - core.database - INFO - Using QueuePool with connection pooling for non-Lambda environment
+2026-08-16 03:36:31,659 - core.database - INFO - Database engine created successfully
+2026-08-16 03:36:31,659 - core.database - INFO - Creating async session maker...
+2026-08-16 03:36:31,660 - core.database - INFO - Async session maker created successfully
+2026-08-16 03:36:31,660 - core.database - INFO - Database connection initialized successfully
+2026-08-16 03:36:31,660 - core.database - DEBUG - [DB_OP] Starting create_tables
+2026-08-16 03:36:31,660 - core.database - INFO - 🔧 Starting table creation...
+2026-08-16 03:36:31,667 - core.database - DEBUG - [DB_OP] Starting get_db session creation
+2026-08-16 03:36:31,668 - core.database - DEBUG - [DB_OP] Database session created successfully in 0.0003s
+2026-08-16 03:36:33,501 - core.database - DEBUG - [DB_OP] Database session cleanup after 1.8337s
+2026-08-16 03:36:33,942 - core.database - INFO - Tables initialized successfully
+2026-08-16 03:36:33,942 - core.database - DEBUG - [DB_OP] Create tables completed in 2.2822s
+2026-08-16 03:36:34,004 - core.database - INFO - Lazy database initialization completed successfully
+2026-08-16 03:36:34,005 - core.database - DEBUG - [DB_OP] Database session created successfully in 2.3476s
+2026-08-16 03:36:34,952 - services.visitor_logs - INFO - Created visitor_logs with id: 72
+2026-08-16 03:36:34,953 - core.database - DEBUG - [DB_OP] Database session cleanup after 3.2960s
+2026-08-16 03:51:58,581 - services.database - DEBUG - [DB_OP] Starting database close
+2026-08-16 03:51:58,582 - core.database - INFO - Database connection closed and engine disposed
+2026-08-16 03:51:58,582 - services.database - INFO - Database connections closed
+2026-08-16 03:51:58,583 - services.database - DEBUG - [DB_OP] Database close completed in 0.0020s
+2026-08-16 03:52:00,627 - main - INFO - === Logging system initialized ===
+2026-08-16 03:52:00,627 - main - INFO - Log file: logs/app_20260816.log
+2026-08-16 03:52:00,628 - main - INFO - Log level: DEBUG
+2026-08-16 03:52:00,628 - main - INFO - Log date: 20260816
+2026-08-16 03:52:00,852 - main - INFO - Included router: routers.admin.router
+2026-08-16 03:52:00,871 - main - INFO - Included router: routers.admin_users.router
+2026-08-16 03:52:00,901 - main - INFO - Included router: routers.aihub.router
+2026-08-16 03:52:00,918 - main - INFO - Included router: routers.auth.router
+2026-08-16 03:52:00,935 - main - INFO - Included router: routers.crypto_wallets.router
+2026-08-16 03:52:00,955 - main - INFO - Included router: routers.email_logs.router
+2026-08-16 03:52:00,975 - main - INFO - Included router: routers.feedbacks.router
+2026-08-16 03:52:00,977 - main - INFO - Included router: routers.health.router
+2026-08-16 03:52:01,001 - main - INFO - Included router: routers.report_runs.router
+2026-08-16 03:52:01,055 - main - INFO - Included router: routers.reports.router
+2026-08-16 03:52:01,079 - main - INFO - Included router: routers.settings.router
+2026-08-16 03:52:01,096 - main - INFO - Included router: routers.site_settings.router
+2026-08-16 03:52:01,117 - main - INFO - Included router: routers.storage.router
+2026-08-16 03:52:01,121 - main - INFO - Included router: routers.user.router
+2026-08-16 03:52:01,140 - main - INFO - Included router: routers.visitor_logs.router
+2026-08-16 03:52:01,141 - main - INFO - === Application startup initiated ===
+2026-08-16 03:52:01,142 - services.database - INFO - Ignore database initialization
+2026-08-16 03:52:01,142 - services.mock_data - INFO - Ignore initialize data
+2026-08-16 03:52:01,142 - services.auth - INFO - Ignore initialize admin
+2026-08-16 03:52:01,142 - main - INFO - === Application startup completed successfully ===
+2026-08-16 03:52:05,752 - services.database - DEBUG - [DB_OP] Starting database close
+2026-08-16 03:52:05,752 - services.database - INFO - Database connections closed
+2026-08-16 03:52:05,752 - services.database - DEBUG - [DB_OP] Database close completed in 0.0006s
+2026-08-16 03:52:07,663 - main - INFO - === Logging system initialized ===
+2026-08-16 03:52:07,663 - main - INFO - Log file: logs/app_20260816.log
+2026-08-16 03:52:07,664 - main - INFO - Log level: DEBUG
+2026-08-16 03:52:07,664 - main - INFO - Log date: 20260816
+2026-08-16 03:52:07,897 - main - INFO - Included router: routers.admin.router
+2026-08-16 03:52:07,918 - main - INFO - Included router: routers.admin_users.router
+2026-08-16 03:52:07,948 - main - INFO - Included router: routers.aihub.router
+2026-08-16 03:52:07,965 - main - INFO - Included router: routers.auth.router
+2026-08-16 03:52:07,986 - main - INFO - Included router: routers.crypto_wallets.router
+2026-08-16 03:52:08,006 - main - INFO - Included router: routers.email_logs.router
+2026-08-16 03:52:08,068 - main - INFO - Included router: routers.feedbacks.router
+2026-08-16 03:52:08,069 - main - INFO - Included router: routers.health.router
+2026-08-16 03:52:08,096 - main - INFO - Included router: routers.report_runs.router
+2026-08-16 03:52:08,104 - main - INFO - Included router: routers.reports.router
+2026-08-16 03:52:08,116 - main - INFO - Included router: routers.settings.router
+2026-08-16 03:52:08,133 - main - INFO - Included router: routers.site_settings.router
+2026-08-16 03:52:08,156 - main - INFO - Included router: routers.storage.router
+2026-08-16 03:52:08,166 - main - INFO - Included router: routers.user.router
+2026-08-16 03:52:08,189 - main - INFO - Included router: routers.visitor_logs.router
+2026-08-16 03:52:08,191 - main - INFO - === Application startup initiated ===
+2026-08-16 03:52:08,191 - services.database - INFO - Ignore database initialization
+2026-08-16 03:52:08,191 - services.mock_data - INFO - Ignore initialize data
+2026-08-16 03:52:08,191 - services.auth - INFO - Ignore initialize admin
+2026-08-16 03:52:08,192 - main - INFO - === Application startup completed successfully ===
+2026-08-16 03:52:21,425 - services.database - DEBUG - [DB_OP] Starting database close
+2026-08-16 03:52:21,425 - services.database - INFO - Database connections closed
+2026-08-16 03:52:21,425 - services.database - DEBUG - [DB_OP] Database close completed in 0.0006s
+2026-08-16 03:52:23,523 - main - INFO - === Logging system initialized ===
+2026-08-16 03:52:23,524 - main - INFO - Log file: logs/app_20260816.log
+2026-08-16 03:52:23,524 - main - INFO - Log level: DEBUG
+2026-08-16 03:52:23,524 - main - INFO - Log date: 20260816
+2026-08-16 03:52:23,769 - main - INFO - Included router: routers.admin.router
+2026-08-16 03:52:23,788 - main - INFO - Included router: routers.admin_users.router
+2026-08-16 03:52:23,824 - main - INFO - Included router: routers.aihub.router
+2026-08-16 03:52:23,838 - main - INFO - Included router: routers.auth.router
+2026-08-16 03:52:23,861 - main - INFO - Included router: routers.crypto_wallets.router
+2026-08-16 03:52:23,883 - main - INFO - Included router: routers.email_logs.router
+2026-08-16 03:52:23,905 - main - INFO - Included router: routers.feedbacks.router
+2026-08-16 03:52:23,908 - main - INFO - Included router: routers.health.router
+2026-08-16 03:52:23,937 - main - INFO - Included router: routers.report_runs.router
+2026-08-16 03:52:23,946 - main - INFO - Included router: routers.reports.router
+2026-08-16 03:52:23,959 - main - INFO - Included router: routers.settings.router
+2026-08-16 03:52:23,979 - main - INFO - Included router: routers.site_settings.router
+2026-08-16 03:52:23,999 - main - INFO - Included router: routers.storage.router
+2026-08-16 03:52:24,046 - main - INFO - Included router: routers.user.router
+2026-08-16 03:52:24,068 - main - INFO - Included router: routers.visitor_logs.router
+2026-08-16 03:52:24,070 - main - INFO - === Application startup initiated ===
+2026-08-16 03:52:24,070 - services.database - INFO - Ignore database initialization
+2026-08-16 03:52:24,070 - services.mock_data - INFO - Ignore initialize data
+2026-08-16 03:52:24,070 - services.auth - INFO - Ignore initialize admin
+2026-08-16 03:52:24,070 - main - INFO - === Application startup completed successfully ===
+2026-08-16 03:52:52,137 - services.database - DEBUG - [DB_OP] Starting database close
+2026-08-16 03:52:52,138 - services.database - INFO - Database connections closed
+2026-08-16 03:52:52,138 - services.database - DEBUG - [DB_OP] Database close completed in 0.0005s
+2026-08-16 03:52:54,146 - main - INFO - === Logging system initialized ===
+2026-08-16 03:52:54,146 - main - INFO - Log file: logs/app_20260816.log
+2026-08-16 03:52:54,146 - main - INFO - Log level: DEBUG
+2026-08-16 03:52:54,146 - main - INFO - Log date: 20260816
+2026-08-16 03:52:54,401 - main - INFO - Included router: routers.admin.router
+2026-08-16 03:52:54,422 - main - INFO - Included router: routers.admin_users.router
+2026-08-16 03:52:54,448 - main - INFO - Included router: routers.aihub.router
+2026-08-16 03:52:54,459 - main - INFO - Included router: routers.auth.router
+2026-08-16 03:52:54,476 - main - INFO - Included router: routers.crypto_wallets.router
+2026-08-16 03:52:54,493 - main - INFO - Included router: routers.email_logs.router
+2026-08-16 03:52:54,510 - main - INFO - Included router: routers.feedbacks.router
+2026-08-16 03:52:54,512 - main - INFO - Included router: routers.health.router
+2026-08-16 03:52:54,535 - main - INFO - Included router: routers.report_runs.router
+2026-08-16 03:52:54,542 - main - INFO - Included router: routers.reports.router
+2026-08-16 03:52:54,551 - main - INFO - Included router: routers.settings.router
+2026-08-16 03:52:54,620 - main - INFO - Included router: routers.shared_maps.router
+2026-08-16 03:52:54,637 - main - INFO - Included router: routers.site_settings.router
+2026-08-16 03:52:54,657 - main - INFO - Included router: routers.storage.router
+2026-08-16 03:52:54,662 - main - INFO - Included router: routers.user.router
+2026-08-16 03:52:54,679 - main - INFO - Included router: routers.visitor_logs.router
+2026-08-16 03:52:54,680 - main - INFO - === Application startup initiated ===
+2026-08-16 03:52:54,680 - services.database - INFO - Ignore database initialization
+2026-08-16 03:52:54,681 - services.mock_data - INFO - Ignore initialize data
+2026-08-16 03:52:54,681 - services.auth - INFO - Ignore initialize admin
+2026-08-16 03:52:54,681 - main - INFO - === Application startup completed successfully ===
+2026-08-16 03:57:06,053 - core.database - DEBUG - [DB_OP] Starting get_db session creation
+2026-08-16 03:57:06,054 - core.database - WARNING - Database session maker not available, attempting lazy initialization...
+2026-08-16 03:57:06,054 - core.database - WARNING - Database not initialized, attempting lazy initialization...
+2026-08-16 03:57:06,054 - core.database - INFO - Starting database initialization...
+2026-08-16 03:57:06,054 - core.config - DEBUG - Read dynamic attribute database_url from environment variable DATABASE_URL
+2026-08-16 03:57:06,054 - core.database - INFO - Normalizing database URL for async compatibility...
+2026-08-16 03:57:06,055 - core.database - INFO - Creating async database engine...
+2026-08-16 03:57:06,055 - core.database - INFO - Using QueuePool with connection pooling for non-Lambda environment
+2026-08-16 03:57:06,056 - core.database - INFO - Database engine created successfully
+2026-08-16 03:57:06,056 - core.database - INFO - Creating async session maker...
+2026-08-16 03:57:06,056 - core.database - INFO - Async session maker created successfully
+2026-08-16 03:57:06,057 - core.database - INFO - Database connection initialized successfully
+2026-08-16 03:57:06,057 - core.database - DEBUG - [DB_OP] Starting create_tables
+2026-08-16 03:57:06,057 - core.database - INFO - 🔧 Starting table creation...
+2026-08-16 03:57:06,064 - core.database - DEBUG - [DB_OP] Starting get_db session creation
+2026-08-16 03:57:06,064 - core.database - DEBUG - [DB_OP] Database session created successfully in 0.0004s
+2026-08-16 03:57:07,388 - core.database - DEBUG - [DB_OP] Database session cleanup after 1.3242s
+2026-08-16 03:57:07,884 - core.database - INFO - Tables initialized successfully
+2026-08-16 03:57:07,884 - core.database - DEBUG - [DB_OP] Create tables completed in 1.8274s
+2026-08-16 03:57:07,948 - core.database - INFO - Lazy database initialization completed successfully
+2026-08-16 03:57:07,948 - core.database - DEBUG - [DB_OP] Database session created successfully in 1.8952s
+2026-08-16 03:57:08,933 - services.visitor_logs - INFO - Created visitor_logs with id: 73
+2026-08-16 03:57:08,933 - core.database - DEBUG - [DB_OP] Database session cleanup after 2.8804s
+2026-08-16 03:57:49,688 - core.database - DEBUG - [DB_OP] Starting get_db session creation
+2026-08-16 03:57:49,689 - core.database - DEBUG - [DB_OP] Database session created successfully in 0.0004s
+2026-08-16 03:57:49,691 - core.database - DEBUG - [DB_OP] Starting get_db session creation
+2026-08-16 03:57:49,691 - core.database - DEBUG - [DB_OP] Database session created successfully in 0.0002s
+2026-08-16 03:57:50,076 - core.database - DEBUG - [DB_OP] Database session cleanup after 0.3881s
+2026-08-16 03:57:50,522 - services.visitor_logs - INFO - Created visitor_logs with id: 74
+2026-08-16 03:57:50,522 - core.database - DEBUG - [DB_OP] Database session cleanup after 0.8317s
+2026-08-16 03:57:53,565 - core.database - DEBUG - [DB_OP] Starting get_db session creation
+2026-08-16 03:57:53,566 - core.database - DEBUG - [DB_OP] Database session created successfully in 0.0006s
+2026-08-16 03:57:53,568 - core.database - DEBUG - [DB_OP] Starting get_db session creation
+2026-08-16 03:57:53,568 - core.database - DEBUG - [DB_OP] Database session created successfully in 0.0002s
+2026-08-16 03:57:53,959 - core.database - DEBUG - [DB_OP] Database session cleanup after 0.3916s
+2026-08-16 03:57:54,265 - services.visitor_logs - INFO - Created visitor_logs with id: 76
+2026-08-16 03:57:54,265 - core.database - DEBUG - [DB_OP] Database session cleanup after 0.7001s
+2026-08-16 03:58:07,942 - services.database - DEBUG - [DB_OP] Starting database close
+2026-08-16 03:58:08,077 - core.database - INFO - Database connection closed and engine disposed
+2026-08-16 03:58:08,077 - services.database - INFO - Database connections closed
+2026-08-16 03:58:08,078 - services.database - DEBUG - [DB_OP] Database close completed in 0.1356s
+2026-08-16 03:58:23,333 - main - INFO - === Logging system initialized ===
+2026-08-16 03:58:23,333 - main - INFO - Log file: logs/app_20260816.log
+2026-08-16 03:58:23,333 - main - INFO - Log level: DEBUG
+2026-08-16 03:58:23,333 - main - INFO - Log date: 20260816
+2026-08-16 03:58:23,604 - main - INFO - Included router: routers.admin.router
+2026-08-16 03:58:23,646 - main - INFO - Included router: routers.admin_users.router
+2026-08-16 03:58:23,680 - main - INFO - Included router: routers.aihub.router
+2026-08-16 03:58:23,692 - main - INFO - Included router: routers.auth.router
+2026-08-16 03:58:23,714 - main - INFO - Included router: routers.crypto_wallets.router
+2026-08-16 03:58:23,733 - main - INFO - Included router: routers.email_logs.router
+2026-08-16 03:58:23,754 - main - INFO - Included router: routers.feedbacks.router
+2026-08-16 03:58:23,755 - main - INFO - Included router: routers.health.router
+2026-08-16 03:58:23,781 - main - INFO - Included router: routers.report_runs.router
+2026-08-16 03:58:23,788 - main - INFO - Included router: routers.reports.router
+2026-08-16 03:58:23,798 - main - INFO - Included router: routers.settings.router
+2026-08-16 03:58:23,823 - main - INFO - Included router: routers.shared_maps.router
+2026-08-16 03:58:23,840 - main - INFO - Included router: routers.site_settings.router
+2026-08-16 03:58:23,862 - main - INFO - Included router: routers.storage.router
+2026-08-16 03:58:23,867 - main - INFO - Included router: routers.user.router
+2026-08-16 03:58:23,887 - main - INFO - Included router: routers.visitor_logs.router
+2026-08-16 03:58:23,888 - main - INFO - === Application startup initiated ===
+2026-08-16 03:58:23,889 - services.database - INFO - Ignore database initialization
+2026-08-16 03:58:23,889 - services.mock_data - INFO - Ignore initialize data
+2026-08-16 03:58:23,889 - services.auth - INFO - Ignore initialize admin
+2026-08-16 03:58:23,889 - main - INFO - === Application startup completed successfully ===
+2026-08-16 03:58:45,175 - services.database - DEBUG - [DB_OP] Starting database close
+2026-08-16 03:58:45,175 - services.database - INFO - Database connections closed
+2026-08-16 03:58:45,175 - services.database - DEBUG - [DB_OP] Database close completed in 0.0005s
+2026-08-16 03:59:01,536 - main - INFO - === Logging system initialized ===
+2026-08-16 03:59:01,536 - main - INFO - Log file: logs/app_20260816.log
+2026-08-16 03:59:01,537 - main - INFO - Log level: DEBUG
+2026-08-16 03:59:01,537 - main - INFO - Log date: 20260816
+2026-08-16 03:59:01,760 - main - INFO - Included router: routers.admin.router
+2026-08-16 03:59:01,779 - main - INFO - Included router: routers.admin_users.router
+2026-08-16 03:59:01,805 - main - INFO - Included router: routers.aihub.router
+2026-08-16 03:59:01,815 - main - INFO - Included router: routers.auth.router
+2026-08-16 03:59:01,833 - main - INFO - Included router: routers.crypto_wallets.router
+2026-08-16 03:59:01,850 - main - INFO - Included router: routers.email_logs.router
+2026-08-16 03:59:01,867 - main - INFO - Included router: routers.feedbacks.router
+2026-08-16 03:59:01,868 - main - INFO - Included router: routers.health.router
+2026-08-16 03:59:01,891 - main - INFO - Included router: routers.report_runs.router
+2026-08-16 03:59:01,902 - main - INFO - Included router: routers.reports.router
+2026-08-16 03:59:01,915 - main - INFO - Included router: routers.settings.router
+2026-08-16 03:59:01,942 - main - INFO - Included router: routers.shared_maps.router
+2026-08-16 03:59:01,965 - main - INFO - Included router: routers.site_settings.router
+2026-08-16 03:59:01,989 - main - INFO - Included router: routers.storage.router
+2026-08-16 03:59:01,995 - main - INFO - Included router: routers.user.router
+2026-08-16 03:59:02,014 - main - INFO - Included router: routers.visitor_logs.router
+2026-08-16 03:59:02,015 - main - INFO - === Application startup initiated ===
+2026-08-16 03:59:02,015 - services.database - INFO - Ignore database initialization
+2026-08-16 03:59:02,016 - services.mock_data - INFO - Ignore initialize data
+2026-08-16 03:59:02,016 - services.auth - INFO - Ignore initialize admin
+2026-08-16 03:59:02,016 - main - INFO - === Application startup completed successfully ===
+2026-08-16 03:59:03,375 - services.database - DEBUG - [DB_OP] Starting database close
+2026-08-16 03:59:03,375 - services.database - INFO - Database connections closed
+2026-08-16 03:59:03,375 - services.database - DEBUG - [DB_OP] Database close completed in 0.0006s
+2026-08-16 03:59:44,506 - main - INFO - === Logging system initialized ===
+2026-08-16 03:59:44,507 - main - INFO - Log file: logs/app_20260816.log
+2026-08-16 03:59:44,507 - main - INFO - Log level: DEBUG
+2026-08-16 03:59:44,507 - main - INFO - Log date: 20260816
+2026-08-16 03:59:44,718 - main - INFO - Included router: routers.admin.router
+2026-08-16 03:59:44,743 - main - INFO - Included router: routers.admin_users.router
+2026-08-16 03:59:44,777 - main - INFO - Included router: routers.aihub.router
+2026-08-16 03:59:44,791 - main - INFO - Included router: routers.auth.router
+2026-08-16 03:59:44,814 - main - INFO - Included router: routers.crypto_wallets.router
+2026-08-16 03:59:44,835 - main - INFO - Included router: routers.email_logs.router
+2026-08-16 03:59:44,853 - main - INFO - Included router: routers.feedbacks.router
+2026-08-16 03:59:44,855 - main - INFO - Included router: routers.health.router
+2026-08-16 03:59:44,879 - main - INFO - Included router: routers.report_runs.router
+2026-08-16 03:59:44,886 - main - INFO - Included router: routers.reports.router
+2026-08-16 03:59:44,896 - main - INFO - Included router: routers.settings.router
+2026-08-16 03:59:44,921 - main - INFO - Included router: routers.shared_maps.router
+2026-08-16 03:59:44,938 - main - INFO - Included router: routers.site_settings.router
+2026-08-16 03:59:44,959 - main - INFO - Included router: routers.storage.router
+2026-08-16 03:59:44,964 - main - INFO - Included router: routers.user.router
+2026-08-16 03:59:44,981 - main - INFO - Included router: routers.visitor_logs.router
+2026-08-16 03:59:44,982 - main - INFO - === Application startup initiated ===
+2026-08-16 03:59:44,983 - services.database - INFO - Ignore database initialization
+2026-08-16 03:59:44,983 - services.mock_data - INFO - Ignore initialize data
+2026-08-16 03:59:44,983 - services.auth - INFO - Ignore initialize admin
+2026-08-16 03:59:44,983 - main - INFO - === Application startup completed successfully ===
+2026-08-16 04:40:11,518 - core.database - DEBUG - [DB_OP] Starting get_db session creation
+2026-08-16 04:40:11,518 - core.database - WARNING - Database session maker not available, attempting lazy initialization...
+2026-08-16 04:40:11,518 - core.database - WARNING - Database not initialized, attempting lazy initialization...
+2026-08-16 04:40:11,518 - core.database - INFO - Starting database initialization...
+2026-08-16 04:40:11,518 - core.config - DEBUG - Read dynamic attribute database_url from environment variable DATABASE_URL
+2026-08-16 04:40:11,519 - core.database - INFO - Normalizing database URL for async compatibility...
+2026-08-16 04:40:11,519 - core.database - INFO - Creating async database engine...
+2026-08-16 04:40:11,519 - core.database - INFO - Using QueuePool with connection pooling for non-Lambda environment
+2026-08-16 04:40:11,520 - core.database - INFO - Database engine created successfully
+2026-08-16 04:40:11,520 - core.database - INFO - Creating async session maker...
+2026-08-16 04:40:11,520 - core.database - INFO - Async session maker created successfully
+2026-08-16 04:40:11,520 - core.database - INFO - Database connection initialized successfully
+2026-08-16 04:40:11,520 - core.database - DEBUG - [DB_OP] Starting create_tables
+2026-08-16 04:40:11,521 - core.database - INFO - 🔧 Starting table creation...
+2026-08-16 04:40:11,527 - core.database - DEBUG - [DB_OP] Starting get_db session creation
+2026-08-16 04:40:11,527 - core.database - DEBUG - [DB_OP] Database session created successfully in 0.0002s
+2026-08-16 04:40:14,009 - services.visitor_logs - INFO - Created visitor_logs with id: 80
+2026-08-16 04:40:14,010 - core.database - DEBUG - [DB_OP] Database session cleanup after 2.4829s
+2026-08-16 04:40:14,091 - core.database - INFO - Tables initialized successfully
+2026-08-16 04:40:14,092 - core.database - DEBUG - [DB_OP] Create tables completed in 2.5714s
+2026-08-16 04:40:14,155 - core.database - INFO - Lazy database initialization completed successfully
+2026-08-16 04:40:14,155 - core.database - DEBUG - [DB_OP] Database session created successfully in 2.6372s
+2026-08-16 04:40:14,611 - core.database - DEBUG - [DB_OP] Database session cleanup after 3.0935s
+2026-08-16 05:04:00,483 - core.database - DEBUG - [DB_OP] Starting get_db session creation
+2026-08-16 05:04:00,483 - core.database - DEBUG - [DB_OP] Database session created successfully in 0.0004s
+2026-08-16 05:04:00,485 - core.database - DEBUG - [DB_OP] Starting get_db session creation
+2026-08-16 05:04:00,485 - core.database - DEBUG - [DB_OP] Database session created successfully in 0.0001s
+2026-08-16 05:04:02,230 - core.database - DEBUG - [DB_OP] Database session cleanup after 1.7456s
+2026-08-16 05:04:02,650 - services.visitor_logs - INFO - Created visitor_logs with id: 81
+2026-08-16 05:04:02,650 - core.database - DEBUG - [DB_OP] Database session cleanup after 2.1673s
+2026-08-16 05:04:40,227 - core.database - DEBUG - [DB_OP] Starting get_db session creation
+2026-08-16 05:04:40,228 - core.database - DEBUG - [DB_OP] Database session created successfully in 0.0005s
+2026-08-16 05:04:40,229 - core.database - DEBUG - [DB_OP] Starting get_db session creation
+2026-08-16 05:04:40,230 - core.database - DEBUG - [DB_OP] Database session created successfully in 0.0004s
+2026-08-16 05:04:40,671 - core.database - DEBUG - [DB_OP] Database session cleanup after 0.4416s
+2026-08-16 05:04:41,048 - services.visitor_logs - INFO - Created visitor_logs with id: 82
+2026-08-16 05:04:41,048 - core.database - DEBUG - [DB_OP] Database session cleanup after 0.8210s
+2026-08-16 05:04:41,646 - core.database - DEBUG - [DB_OP] Starting get_db session creation
+2026-08-16 05:04:41,646 - core.database - DEBUG - [DB_OP] Database session created successfully in 0.0004s
+2026-08-16 05:04:41,648 - core.database - DEBUG - [DB_OP] Starting get_db session creation
+2026-08-16 05:04:41,648 - core.database - DEBUG - [DB_OP] Database session created successfully in 0.0002s
+2026-08-16 05:04:42,024 - core.database - DEBUG - [DB_OP] Database session cleanup after 0.3784s
+2026-08-16 05:04:42,402 - services.visitor_logs - INFO - Created visitor_logs with id: 83
+2026-08-16 05:04:42,404 - core.database - DEBUG - [DB_OP] Database session cleanup after 0.7558s
+2026-08-16 05:05:05,608 - services.database - DEBUG - [DB_OP] Starting database close
+2026-08-16 05:05:05,752 - core.database - INFO - Database connection closed and engine disposed
+2026-08-16 05:05:05,752 - services.database - INFO - Database connections closed
+2026-08-16 05:05:05,752 - services.database - DEBUG - [DB_OP] Database close completed in 0.1440s
+2026-08-16 05:05:20,622 - main - INFO - === Logging system initialized ===
+2026-08-16 05:05:20,623 - main - INFO - Log file: logs/app_20260816.log
+2026-08-16 05:05:20,623 - main - INFO - Log level: DEBUG
+2026-08-16 05:05:20,623 - main - INFO - Log date: 20260816
+2026-08-16 05:05:20,954 - main - INFO - Included router: routers.admin.router
+2026-08-16 05:05:21,007 - main - INFO - Included router: routers.admin_users.router
+2026-08-16 05:05:21,081 - main - INFO - Included router: routers.aihub.router
+2026-08-16 05:05:21,099 - main - INFO - Included router: routers.auth.router
+2026-08-16 05:05:21,121 - main - INFO - Included router: routers.crypto_wallets.router
+2026-08-16 05:05:21,144 - main - INFO - Included router: routers.email_logs.router
+2026-08-16 05:05:21,203 - main - INFO - Included router: routers.feedbacks.router
+2026-08-16 05:05:21,207 - main - INFO - Included router: routers.health.router
+2026-08-16 05:05:21,233 - main - INFO - Included router: routers.report_runs.router
+2026-08-16 05:05:21,242 - main - INFO - Included router: routers.reports.router
+2026-08-16 05:05:21,251 - main - INFO - Included router: routers.settings.router
+2026-08-16 05:05:21,308 - main - INFO - Included router: routers.shared_maps.router
+2026-08-16 05:05:21,324 - main - INFO - Included router: routers.site_settings.router
+2026-08-16 05:05:21,344 - main - INFO - Included router: routers.storage.router
+2026-08-16 05:05:21,349 - main - INFO - Included router: routers.user.router
+2026-08-16 05:05:21,402 - main - INFO - Included router: routers.visitor_logs.router
+2026-08-16 05:05:21,403 - main - INFO - === Application startup initiated ===
+2026-08-16 05:05:21,404 - services.database - INFO - Ignore database initialization
+2026-08-16 05:05:21,404 - services.mock_data - INFO - Ignore initialize data
+2026-08-16 05:05:21,404 - services.auth - INFO - Ignore initialize admin
+2026-08-16 05:05:21,404 - main - INFO - === Application startup completed successfully ===
+2026-08-16 05:05:21,505 - services.database - DEBUG - [DB_OP] Starting database close
+2026-08-16 05:05:21,505 - services.database - INFO - Database connections closed
+2026-08-16 05:05:21,505 - services.database - DEBUG - [DB_OP] Database close completed in 0.0003s
+2026-08-16 05:05:31,641 - main - INFO - === Logging system initialized ===
+2026-08-16 05:05:31,641 - main - INFO - Log file: logs/app_20260816.log
+2026-08-16 05:05:31,642 - main - INFO - Log level: DEBUG
+2026-08-16 05:05:31,642 - main - INFO - Log date: 20260816
+2026-08-16 05:05:31,872 - main - INFO - Included router: routers.admin.router
+2026-08-16 05:05:31,891 - main - INFO - Included router: routers.admin_users.router
+2026-08-16 05:05:31,927 - main - INFO - Included router: routers.aihub.router
+2026-08-16 05:05:31,941 - main - INFO - Included router: routers.auth.router
+2026-08-16 05:05:31,961 - main - INFO - Included router: routers.crypto_wallets.router
+2026-08-16 05:05:31,981 - main - INFO - Included router: routers.email_logs.router
+2026-08-16 05:05:32,005 - main - INFO - Included router: routers.feedbacks.router
+2026-08-16 05:05:32,048 - main - INFO - Included router: routers.health.router
+2026-08-16 05:05:32,074 - main - INFO - Included router: routers.report_runs.router
+2026-08-16 05:05:32,083 - main - INFO - Included router: routers.reports.router
+2026-08-16 05:05:32,094 - main - INFO - Included router: routers.settings.router
+2026-08-16 05:05:32,118 - main - INFO - Included router: routers.shared_maps.router
+2026-08-16 05:05:32,138 - main - INFO - Included router: routers.site_settings.router
+2026-08-16 05:05:32,163 - main - INFO - Included router: routers.storage.router
+2026-08-16 05:05:32,170 - main - INFO - Included router: routers.user.router
+2026-08-16 05:05:32,191 - main - INFO - Included router: routers.visitor_logs.router
+2026-08-16 05:05:32,192 - main - INFO - === Application startup initiated ===
+2026-08-16 05:05:32,192 - services.database - INFO - Ignore database initialization
+2026-08-16 05:05:32,192 - services.mock_data - INFO - Ignore initialize data
+2026-08-16 05:05:32,193 - services.auth - INFO - Ignore initialize admin
+2026-08-16 05:05:32,193 - main - INFO - === Application startup completed successfully ===
+2026-08-16 05:05:33,495 - services.database - DEBUG - [DB_OP] Starting database close
+2026-08-16 05:05:33,496 - services.database - INFO - Database connections closed
+2026-08-16 05:05:33,496 - services.database - DEBUG - [DB_OP] Database close completed in 0.0004s
+2026-08-16 05:05:50,570 - main - INFO - === Logging system initialized ===
+2026-08-16 05:05:50,570 - main - INFO - Log file: logs/app_20260816.log
+2026-08-16 05:05:50,570 - main - INFO - Log level: DEBUG
+2026-08-16 05:05:50,570 - main - INFO - Log date: 20260816
+2026-08-16 05:05:50,774 - main - INFO - Included router: routers.admin.router
+2026-08-16 05:05:50,791 - main - INFO - Included router: routers.admin_users.router
+2026-08-16 05:05:50,818 - main - INFO - Included router: routers.aihub.router
+2026-08-16 05:05:50,828 - main - INFO - Included router: routers.auth.router
+2026-08-16 05:05:50,844 - main - INFO - Included router: routers.crypto_wallets.router
+2026-08-16 05:05:50,860 - main - INFO - Included router: routers.email_logs.router
+2026-08-16 05:05:50,877 - main - INFO - Included router: routers.feedbacks.router
+2026-08-16 05:05:50,878 - main - INFO - Included router: routers.health.router
+2026-08-16 05:05:50,900 - main - INFO - Included router: routers.report_runs.router
+2026-08-16 05:05:50,910 - main - INFO - Included router: routers.reports.router
+2026-08-16 05:05:50,921 - main - INFO - Included router: routers.settings.router
+2026-08-16 05:05:50,942 - main - INFO - Included router: routers.shared_maps.router
+2026-08-16 05:05:50,957 - main - INFO - Included router: routers.site_settings.router
+2026-08-16 05:05:50,976 - main - INFO - Included router: routers.storage.router
+2026-08-16 05:05:50,980 - main - INFO - Included router: routers.user.router
+2026-08-16 05:05:50,997 - main - INFO - Included router: routers.visitor_logs.router
+2026-08-16 05:05:50,999 - main - INFO - === Application startup initiated ===
+2026-08-16 05:05:50,999 - services.database - INFO - Ignore database initialization
+2026-08-16 05:05:50,999 - services.mock_data - INFO - Ignore initialize data
+2026-08-16 05:05:50,999 - services.auth - INFO - Ignore initialize admin
+2026-08-16 05:05:50,999 - main - INFO - === Application startup completed successfully ===
+2026-08-16 05:17:12,046 - core.database - DEBUG - [DB_OP] Starting get_db session creation
+2026-08-16 05:17:12,047 - core.database - WARNING - Database session maker not available, attempting lazy initialization...
+2026-08-16 05:17:12,047 - core.database - WARNING - Database not initialized, attempting lazy initialization...
+2026-08-16 05:17:12,047 - core.database - INFO - Starting database initialization...
+2026-08-16 05:17:12,048 - core.config - DEBUG - Read dynamic attribute database_url from environment variable DATABASE_URL
+2026-08-16 05:17:12,048 - core.database - INFO - Normalizing database URL for async compatibility...
+2026-08-16 05:17:12,049 - core.database - INFO - Creating async database engine...
+2026-08-16 05:17:12,049 - core.database - INFO - Using QueuePool with connection pooling for non-Lambda environment
+2026-08-16 05:17:12,051 - core.database - INFO - Database engine created successfully
+2026-08-16 05:17:12,051 - core.database - INFO - Creating async session maker...
+2026-08-16 05:17:12,051 - core.database - INFO - Async session maker created successfully
+2026-08-16 05:17:12,051 - core.database - INFO - Database connection initialized successfully
+2026-08-16 05:17:12,051 - core.database - DEBUG - [DB_OP] Starting create_tables
+2026-08-16 05:17:12,051 - core.database - INFO - 🔧 Starting table creation...
+2026-08-16 05:17:12,059 - core.database - DEBUG - [DB_OP] Starting get_db session creation
+2026-08-16 05:17:12,060 - core.database - DEBUG - [DB_OP] Database session created successfully in 0.0013s
+2026-08-16 05:17:14,340 - services.visitor_logs - INFO - Created visitor_logs with id: 88
+2026-08-16 05:17:14,341 - core.database - DEBUG - [DB_OP] Database session cleanup after 2.2816s
+2026-08-16 05:17:14,384 - core.database - INFO - Tables initialized successfully
+2026-08-16 05:17:14,384 - core.database - DEBUG - [DB_OP] Create tables completed in 2.3329s
+2026-08-16 05:17:14,447 - core.database - INFO - Lazy database initialization completed successfully
+2026-08-16 05:17:14,448 - core.database - DEBUG - [DB_OP] Database session created successfully in 2.4015s
+2026-08-16 05:17:14,895 - core.database - DEBUG - [DB_OP] Database session cleanup after 2.8493s
+2026-08-16 05:20:43,535 - core.database - DEBUG - [DB_OP] Starting get_db session creation
+2026-08-16 05:20:43,535 - core.database - DEBUG - [DB_OP] Database session created successfully in 0.0004s
+2026-08-16 05:20:43,541 - core.database - DEBUG - [DB_OP] Starting get_db session creation
+2026-08-16 05:20:43,541 - core.database - DEBUG - [DB_OP] Database session created successfully in 0.0003s
+2026-08-16 05:20:43,922 - core.database - DEBUG - [DB_OP] Database session cleanup after 0.3812s
+2026-08-16 05:20:44,358 - services.visitor_logs - INFO - Created visitor_logs with id: 90
+2026-08-16 05:20:44,359 - core.database - DEBUG - [DB_OP] Database session cleanup after 0.8242s
+2026-08-16 05:31:59,741 - services.database - DEBUG - [DB_OP] Starting database close
+2026-08-16 05:31:59,742 - core.database - INFO - Database connection closed and engine disposed
+2026-08-16 05:31:59,744 - services.database - INFO - Database connections closed
+2026-08-16 05:31:59,744 - services.database - DEBUG - [DB_OP] Database close completed in 0.0027s
+2026-08-16 05:32:01,685 - main - INFO - === Logging system initialized ===
+2026-08-16 05:32:01,685 - main - INFO - Log file: logs/app_20260816.log
+2026-08-16 05:32:01,685 - main - INFO - Log level: DEBUG
+2026-08-16 05:32:01,685 - main - INFO - Log date: 20260816
+2026-08-16 05:32:01,950 - main - INFO - Included router: routers.admin.router
+2026-08-16 05:32:01,968 - main - INFO - Included router: routers.admin_users.router
+2026-08-16 05:32:02,001 - main - INFO - Included router: routers.aihub.router
+2026-08-16 05:32:02,059 - main - INFO - Included router: routers.auth.router
+2026-08-16 05:32:02,076 - main - INFO - Included router: routers.crypto_wallets.router
+2026-08-16 05:32:02,094 - main - INFO - Included router: routers.email_logs.router
+2026-08-16 05:32:02,112 - main - INFO - Included router: routers.feedbacks.router
+2026-08-16 05:32:02,114 - main - INFO - Included router: routers.health.router
+2026-08-16 05:32:02,138 - main - INFO - Included router: routers.report_runs.router
+2026-08-16 05:32:02,145 - main - INFO - Included router: routers.reports.router
+2026-08-16 05:32:02,154 - main - INFO - Included router: routers.settings.router
+2026-08-16 05:32:02,175 - main - INFO - Included router: routers.shared_maps.router
+2026-08-16 05:32:02,192 - main - INFO - Included router: routers.site_settings.router
+2026-08-16 05:32:02,212 - main - INFO - Included router: routers.storage.router
+2026-08-16 05:32:02,217 - main - INFO - Included router: routers.user.router
+2026-08-16 05:32:02,235 - main - INFO - Included router: routers.visitor_logs.router
+2026-08-16 05:32:02,237 - main - INFO - === Application startup initiated ===
+2026-08-16 05:32:02,237 - services.database - INFO - Ignore database initialization
+2026-08-16 05:32:02,237 - services.mock_data - INFO - Ignore initialize data
+2026-08-16 05:32:02,237 - services.auth - INFO - Ignore initialize admin
+2026-08-16 05:32:02,237 - main - INFO - === Application startup completed successfully ===
+2026-08-16 05:34:10,301 - core.database - DEBUG - [DB_OP] Starting get_db session creation
+2026-08-16 05:34:10,302 - core.database - WARNING - Database session maker not available, attempting lazy initialization...
+2026-08-16 05:34:10,302 - core.database - WARNING - Database not initialized, attempting lazy initialization...
+2026-08-16 05:34:10,302 - core.database - INFO - Starting database initialization...
+2026-08-16 05:34:10,302 - core.config - DEBUG - Read dynamic attribute database_url from environment variable DATABASE_URL
+2026-08-16 05:34:10,302 - core.database - INFO - Normalizing database URL for async compatibility...
+2026-08-16 05:34:10,303 - core.database - INFO - Creating async database engine...
+2026-08-16 05:34:10,303 - core.database - INFO - Using QueuePool with connection pooling for non-Lambda environment
+2026-08-16 05:34:10,303 - core.database - INFO - Database engine created successfully
+2026-08-16 05:34:10,304 - core.database - INFO - Creating async session maker...
+2026-08-16 05:34:10,304 - core.database - INFO - Async session maker created successfully
+2026-08-16 05:34:10,304 - core.database - INFO - Database connection initialized successfully
+2026-08-16 05:34:10,304 - core.database - DEBUG - [DB_OP] Starting create_tables
+2026-08-16 05:34:10,304 - core.database - INFO - 🔧 Starting table creation...
+2026-08-16 05:34:10,309 - core.database - DEBUG - [DB_OP] Starting get_db session creation
+2026-08-16 05:34:10,311 - core.database - DEBUG - [DB_OP] Database session created successfully in 0.0013s
+2026-08-16 05:34:12,090 - services.visitor_logs - INFO - Created visitor_logs with id: 91
+2026-08-16 05:34:12,091 - core.database - DEBUG - [DB_OP] Database session cleanup after 1.7815s
+2026-08-16 05:34:12,149 - core.database - INFO - Tables initialized successfully
+2026-08-16 05:34:12,150 - core.database - DEBUG - [DB_OP] Create tables completed in 1.8459s
+2026-08-16 05:34:12,213 - core.database - INFO - Lazy database initialization completed successfully
+2026-08-16 05:34:12,213 - core.database - DEBUG - [DB_OP] Database session created successfully in 1.9118s
+2026-08-16 05:34:12,365 - core.database - DEBUG - [DB_OP] Starting get_db session creation
+2026-08-16 05:34:12,366 - core.database - DEBUG - [DB_OP] Database session created successfully in 0.0004s
+2026-08-16 05:34:12,368 - core.database - DEBUG - [DB_OP] Starting get_db session creation
+2026-08-16 05:34:12,369 - core.database - DEBUG - [DB_OP] Database session created successfully in 0.0003s
+2026-08-16 05:34:12,660 - core.database - DEBUG - [DB_OP] Database session cleanup after 2.3587s
+2026-08-16 05:34:12,872 - core.database - DEBUG - [DB_OP] Database session cleanup after 0.5069s
+2026-08-16 05:34:13,364 - services.visitor_logs - INFO - Created visitor_logs with id: 92
+2026-08-16 05:34:13,365 - core.database - DEBUG - [DB_OP] Database session cleanup after 0.9961s
+2026-08-16 05:35:07,622 - services.database - DEBUG - [DB_OP] Starting database close
+2026-08-16 05:35:07,821 - core.database - INFO - Database connection closed and engine disposed
+2026-08-16 05:35:07,822 - services.database - INFO - Database connections closed
+2026-08-16 05:35:07,822 - services.database - DEBUG - [DB_OP] Database close completed in 0.1994s
+2026-08-16 05:35:24,205 - main - INFO - === Logging system initialized ===
+2026-08-16 05:35:24,205 - main - INFO - Log file: logs/app_20260816.log
+2026-08-16 05:35:24,205 - main - INFO - Log level: DEBUG
+2026-08-16 05:35:24,205 - main - INFO - Log date: 20260816
+2026-08-16 05:35:24,928 - main - INFO - Included router: routers.admin.router
+2026-08-16 05:35:24,952 - main - INFO - Included router: routers.admin_users.router
+2026-08-16 05:35:25,060 - main - INFO - Included router: routers.aihub.router
+2026-08-16 05:35:25,074 - main - INFO - Included router: routers.auth.router
+2026-08-16 05:35:25,093 - main - INFO - Included router: routers.crypto_wallets.router
+2026-08-16 05:35:25,111 - main - INFO - Included router: routers.email_logs.router
+2026-08-16 05:35:25,128 - main - INFO - Included router: routers.feedbacks.router
+2026-08-16 05:35:25,130 - main - INFO - Included router: routers.health.router
+2026-08-16 05:35:25,154 - main - INFO - Included router: routers.report_runs.router
+2026-08-16 05:35:25,161 - main - INFO - Included router: routers.reports.router
+2026-08-16 05:35:25,171 - main - INFO - Included router: routers.settings.router
+2026-08-16 05:35:25,194 - main - INFO - Included router: routers.shared_maps.router
+2026-08-16 05:35:25,214 - main - INFO - Included router: routers.site_settings.router
+2026-08-16 05:35:25,236 - main - INFO - Included router: routers.storage.router
+2026-08-16 05:35:25,241 - main - INFO - Included router: routers.user.router
+2026-08-16 05:35:25,258 - main - INFO - Included router: routers.visitor_logs.router
+2026-08-16 05:35:25,260 - main - INFO - === Application startup initiated ===
+2026-08-16 05:35:25,260 - services.database - INFO - Ignore database initialization
+2026-08-16 05:35:25,260 - services.mock_data - INFO - Ignore initialize data
+2026-08-16 05:35:25,260 - services.auth - INFO - Ignore initialize admin
+2026-08-16 05:35:25,260 - main - INFO - === Application startup completed successfully ===
+2026-08-16 05:35:26,632 - services.database - DEBUG - [DB_OP] Starting database close
+2026-08-16 05:35:26,632 - services.database - INFO - Database connections closed
+2026-08-16 05:35:26,632 - services.database - DEBUG - [DB_OP] Database close completed in 0.0003s
+2026-08-16 05:35:53,322 - main - INFO - === Logging system initialized ===
+2026-08-16 05:35:53,322 - main - INFO - Log file: logs/app_20260816.log
+2026-08-16 05:35:53,322 - main - INFO - Log level: DEBUG
+2026-08-16 05:35:53,323 - main - INFO - Log date: 20260816
+2026-08-16 05:35:54,143 - main - INFO - Included router: routers.admin.router
+2026-08-16 05:35:54,162 - main - INFO - Included router: routers.admin_users.router
+2026-08-16 05:35:54,218 - main - INFO - Included router: routers.aihub.router
+2026-08-16 05:35:54,312 - main - INFO - Included router: routers.auth.router
+2026-08-16 05:35:54,333 - main - INFO - Included router: routers.crypto_wallets.router
+2026-08-16 05:35:54,416 - main - INFO - Included router: routers.email_logs.router
+2026-08-16 05:35:54,436 - main - INFO - Included router: routers.feedbacks.router
+2026-08-16 05:35:54,438 - main - INFO - Included router: routers.health.router
+2026-08-16 05:35:54,511 - main - INFO - Included router: routers.report_runs.router
+2026-08-16 05:35:54,709 - main - INFO - Included router: routers.reports.router
+2026-08-16 05:35:54,720 - main - INFO - Included router: routers.settings.router
+2026-08-16 05:35:54,822 - main - INFO - Included router: routers.shared_maps.router
+2026-08-16 05:35:54,843 - main - INFO - Included router: routers.site_settings.router
+2026-08-16 05:35:54,902 - main - INFO - Included router: routers.storage.router
+2026-08-16 05:35:54,910 - main - INFO - Included router: routers.user.router
+2026-08-16 05:35:54,931 - main - INFO - Included router: routers.visitor_logs.router
+2026-08-16 05:35:54,932 - main - INFO - === Application startup initiated ===
+2026-08-16 05:35:54,932 - services.database - INFO - Ignore database initialization
+2026-08-16 05:35:54,933 - services.mock_data - INFO - Ignore initialize data
+2026-08-16 05:35:54,933 - services.auth - INFO - Ignore initialize admin
+2026-08-16 05:35:54,933 - main - INFO - === Application startup completed successfully ===
+2026-08-16 05:51:49,152 - core.database - DEBUG - [DB_OP] Starting get_db session creation
+2026-08-16 05:51:49,153 - core.database - WARNING - Database session maker not available, attempting lazy initialization...
+2026-08-16 05:51:49,153 - core.database - WARNING - Database not initialized, attempting lazy initialization...
+2026-08-16 05:51:49,153 - core.database - INFO - Starting database initialization...
+2026-08-16 05:51:49,154 - core.config - DEBUG - Read dynamic attribute database_url from environment variable DATABASE_URL
+2026-08-16 05:51:49,154 - core.database - INFO - Normalizing database URL for async compatibility...
+2026-08-16 05:51:49,155 - core.database - INFO - Creating async database engine...
+2026-08-16 05:51:49,155 - core.database - INFO - Using QueuePool with connection pooling for non-Lambda environment
+2026-08-16 05:51:49,156 - core.database - INFO - Database engine created successfully
+2026-08-16 05:51:49,156 - core.database - INFO - Creating async session maker...
+2026-08-16 05:51:49,156 - core.database - INFO - Async session maker created successfully
+2026-08-16 05:51:49,156 - core.database - INFO - Database connection initialized successfully
+2026-08-16 05:51:49,156 - core.database - DEBUG - [DB_OP] Starting create_tables
+2026-08-16 05:51:49,156 - core.database - INFO - 🔧 Starting table creation...
+2026-08-16 05:51:49,162 - core.database - DEBUG - [DB_OP] Starting get_db session creation
+2026-08-16 05:51:49,162 - core.database - DEBUG - [DB_OP] Database session created successfully in 0.0002s
+2026-08-16 05:51:50,553 - core.database - DEBUG - [DB_OP] Starting get_db session creation
+2026-08-16 05:51:50,553 - core.database - DEBUG - [DB_OP] Database session created successfully in 0.0006s
+2026-08-16 05:51:50,556 - core.database - DEBUG - [DB_OP] Starting get_db session creation
+2026-08-16 05:51:50,556 - core.database - DEBUG - [DB_OP] Database session created successfully in 0.0003s
+2026-08-16 05:51:51,589 - core.database - DEBUG - [DB_OP] Database session cleanup after 1.0362s
+2026-08-16 05:51:52,020 - services.visitor_logs - INFO - Created visitor_logs with id: 95
+2026-08-16 05:51:52,021 - core.database - DEBUG - [DB_OP] Database session cleanup after 1.4649s
+2026-08-16 05:51:52,022 - services.visitor_logs - INFO - Created visitor_logs with id: 96
+2026-08-16 05:51:52,023 - core.database - DEBUG - [DB_OP] Database session cleanup after 2.8608s
+2026-08-16 05:51:52,097 - core.database - INFO - Tables initialized successfully
+2026-08-16 05:51:52,097 - core.database - DEBUG - [DB_OP] Create tables completed in 2.9410s
+2026-08-16 05:51:52,161 - core.database - INFO - Lazy database initialization completed successfully
+2026-08-16 05:51:52,161 - core.database - DEBUG - [DB_OP] Database session created successfully in 3.0089s
+2026-08-16 05:51:52,600 - core.database - DEBUG - [DB_OP] Database session cleanup after 3.4476s
+2026-08-16 05:53:02,362 - core.database - DEBUG - [DB_OP] Starting get_db session creation
+2026-08-16 05:53:02,363 - core.database - DEBUG - [DB_OP] Database session created successfully in 0.0004s
+2026-08-16 05:53:02,366 - core.database - DEBUG - [DB_OP] Starting get_db session creation
+2026-08-16 05:53:02,367 - core.database - DEBUG - [DB_OP] Database session created successfully in 0.0003s
+2026-08-16 05:53:02,802 - core.database - DEBUG - [DB_OP] Database session cleanup after 0.4399s
+2026-08-16 05:53:03,197 - services.visitor_logs - INFO - Created visitor_logs with id: 97
+2026-08-16 05:53:03,197 - core.database - DEBUG - [DB_OP] Database session cleanup after 0.8312s
+2026-08-16 05:53:12,276 - services.database - DEBUG - [DB_OP] Starting database close
+2026-08-16 05:53:12,538 - core.database - INFO - Database connection closed and engine disposed
+2026-08-16 05:53:12,539 - services.database - INFO - Database connections closed
+2026-08-16 05:53:12,539 - services.database - DEBUG - [DB_OP] Database close completed in 0.2625s
+2026-08-16 05:53:28,122 - main - INFO - === Logging system initialized ===
+2026-08-16 05:53:28,122 - main - INFO - Log file: logs/app_20260816.log
+2026-08-16 05:53:28,122 - main - INFO - Log level: DEBUG
+2026-08-16 05:53:28,122 - main - INFO - Log date: 20260816
+2026-08-16 05:53:28,355 - main - INFO - Included router: routers.admin.router
+2026-08-16 05:53:28,378 - main - INFO - Included router: routers.admin_users.router
+2026-08-16 05:53:28,411 - main - INFO - Included router: routers.aihub.router
+2026-08-16 05:53:28,424 - main - INFO - Included router: routers.auth.router
+2026-08-16 05:53:28,445 - main - INFO - Included router: routers.crypto_wallets.router
+2026-08-16 05:53:28,466 - main - INFO - Included router: routers.email_logs.router
+2026-08-16 05:53:28,485 - main - INFO - Included router: routers.feedbacks.router
+2026-08-16 05:53:28,488 - main - INFO - Included router: routers.health.router
+2026-08-16 05:53:28,520 - main - INFO - Included router: routers.report_runs.router
+2026-08-16 05:53:28,528 - main - INFO - Included router: routers.reports.router
+2026-08-16 05:53:28,538 - main - INFO - Included router: routers.settings.router
+2026-08-16 05:53:28,564 - main - INFO - Included router: routers.shared_maps.router
+2026-08-16 05:53:28,583 - main - INFO - Included router: routers.site_settings.router
+2026-08-16 05:53:28,611 - main - INFO - Included router: routers.storage.router
+2026-08-16 05:53:28,616 - main - INFO - Included router: routers.user.router
+2026-08-16 05:53:28,637 - main - INFO - Included router: routers.visitor_logs.router
+2026-08-16 05:53:28,639 - main - INFO - === Application startup initiated ===
+2026-08-16 05:53:28,639 - services.database - INFO - Ignore database initialization
+2026-08-16 05:53:28,639 - services.mock_data - INFO - Ignore initialize data
+2026-08-16 05:53:28,639 - services.auth - INFO - Ignore initialize admin
+2026-08-16 05:53:28,639 - main - INFO - === Application startup completed successfully ===
+2026-08-16 05:53:38,357 - services.database - DEBUG - [DB_OP] Starting database close
+2026-08-16 05:53:38,358 - services.database - INFO - Database connections closed
+2026-08-16 05:53:38,358 - services.database - DEBUG - [DB_OP] Database close completed in 0.0007s
+2026-08-16 05:53:54,564 - main - INFO - === Logging system initialized ===
+2026-08-16 05:53:54,564 - main - INFO - Log file: logs/app_20260816.log
+2026-08-16 05:53:54,565 - main - INFO - Log level: DEBUG
+2026-08-16 05:53:54,565 - main - INFO - Log date: 20260816
+2026-08-16 05:53:54,843 - main - INFO - Included router: routers.admin.router
+2026-08-16 05:53:54,862 - main - INFO - Included router: routers.admin_users.router
+2026-08-16 05:53:54,921 - main - INFO - Included router: routers.aihub.router
+2026-08-16 05:53:54,933 - main - INFO - Included router: routers.auth.router
+2026-08-16 05:53:54,956 - main - INFO - Included router: routers.crypto_wallets.router
+2026-08-16 05:53:54,977 - main - INFO - Included router: routers.email_logs.router
+2026-08-16 05:53:54,997 - main - INFO - Included router: routers.feedbacks.router
+2026-08-16 05:53:55,000 - main - INFO - Included router: routers.health.router
+2026-08-16 05:53:55,078 - main - INFO - Included router: routers.report_runs.router
+2026-08-16 05:53:55,087 - main - INFO - Included router: routers.reports.router
+2026-08-16 05:53:55,101 - main - INFO - Included router: routers.settings.router
+2026-08-16 05:53:55,129 - main - INFO - Included router: routers.shared_maps.router
+2026-08-16 05:53:55,147 - main - INFO - Included router: routers.site_settings.router
+2026-08-16 05:53:55,167 - main - INFO - Included router: routers.storage.router
+2026-08-16 05:53:55,172 - main - INFO - Included router: routers.user.router
+2026-08-16 05:53:55,193 - main - INFO - Included router: routers.visitor_logs.router
+2026-08-16 05:53:55,195 - main - INFO - === Application startup initiated ===
+2026-08-16 05:53:55,195 - services.database - INFO - Ignore database initialization
+2026-08-16 05:53:55,195 - services.mock_data - INFO - Ignore initialize data
+2026-08-16 05:53:55,195 - services.auth - INFO - Ignore initialize admin
+2026-08-16 05:53:55,195 - main - INFO - === Application startup completed successfully ===
+2026-08-16 05:53:56,196 - services.database - DEBUG - [DB_OP] Starting database close
+2026-08-16 05:53:56,197 - services.database - INFO - Database connections closed
+2026-08-16 05:53:56,197 - services.database - DEBUG - [DB_OP] Database close completed in 0.0008s
+2026-08-16 05:54:39,109 - main - INFO - === Logging system initialized ===
+2026-08-16 05:54:39,113 - main - INFO - Log file: logs/app_20260816.log
+2026-08-16 05:54:39,113 - main - INFO - Log level: DEBUG
+2026-08-16 05:54:39,113 - main - INFO - Log date: 20260816
+2026-08-16 05:54:39,352 - main - INFO - Included router: routers.admin.router
+2026-08-16 05:54:39,372 - main - INFO - Included router: routers.admin_users.router
+2026-08-16 05:54:39,404 - main - INFO - Included router: routers.aihub.router
+2026-08-16 05:54:39,417 - main - INFO - Included router: routers.auth.router
+2026-08-16 05:54:39,436 - main - INFO - Included router: routers.crypto_wallets.router
+2026-08-16 05:54:39,457 - main - INFO - Included router: routers.email_logs.router
+2026-08-16 05:54:39,476 - main - INFO - Included router: routers.feedbacks.router
+2026-08-16 05:54:39,477 - main - INFO - Included router: routers.health.router
+2026-08-16 05:54:39,502 - main - INFO - Included router: routers.report_runs.router
+2026-08-16 05:54:39,515 - main - INFO - Included router: routers.reports.router
+2026-08-16 05:54:39,525 - main - INFO - Included router: routers.settings.router
+2026-08-16 05:54:39,548 - main - INFO - Included router: routers.shared_maps.router
+2026-08-16 05:54:39,566 - main - INFO - Included router: routers.site_settings.router
+2026-08-16 05:54:39,590 - main - INFO - Included router: routers.storage.router
+2026-08-16 05:54:39,596 - main - INFO - Included router: routers.user.router
+2026-08-16 05:54:39,616 - main - INFO - Included router: routers.visitor_logs.router
+2026-08-16 05:54:39,617 - main - INFO - === Application startup initiated ===
+2026-08-16 05:54:39,617 - services.database - INFO - Ignore database initialization
+2026-08-16 05:54:39,617 - services.mock_data - INFO - Ignore initialize data
+2026-08-16 05:54:39,617 - services.auth - INFO - Ignore initialize admin
+2026-08-16 05:54:39,617 - main - INFO - === Application startup completed successfully ===
+2026-08-16 05:57:48,222 - core.database - DEBUG - [DB_OP] Starting get_db session creation
+2026-08-16 05:57:48,222 - core.database - WARNING - Database session maker not available, attempting lazy initialization...
+2026-08-16 05:57:48,223 - core.database - WARNING - Database not initialized, attempting lazy initialization...
+2026-08-16 05:57:48,223 - core.database - INFO - Starting database initialization...
+2026-08-16 05:57:48,223 - core.config - DEBUG - Read dynamic attribute database_url from environment variable DATABASE_URL
+2026-08-16 05:57:48,223 - core.database - INFO - Normalizing database URL for async compatibility...
+2026-08-16 05:57:48,224 - core.database - INFO - Creating async database engine...
+2026-08-16 05:57:48,224 - core.database - INFO - Using QueuePool with connection pooling for non-Lambda environment
+2026-08-16 05:57:48,226 - core.database - INFO - Database engine created successfully
+2026-08-16 05:57:48,226 - core.database - INFO - Creating async session maker...
+2026-08-16 05:57:48,226 - core.database - INFO - Async session maker created successfully
+2026-08-16 05:57:48,226 - core.database - INFO - Database connection initialized successfully
+2026-08-16 05:57:48,226 - core.database - DEBUG - [DB_OP] Starting create_tables
+2026-08-16 05:57:48,226 - core.database - INFO - 🔧 Starting table creation...
+2026-08-16 05:57:48,235 - core.database - DEBUG - [DB_OP] Starting get_db session creation
+2026-08-16 05:57:48,235 - core.database - DEBUG - [DB_OP] Database session created successfully in 0.0004s
+2026-08-16 05:57:49,542 - core.database - DEBUG - [DB_OP] Database session cleanup after 1.3076s
+2026-08-16 05:57:50,059 - core.database - INFO - Tables initialized successfully
+2026-08-16 05:57:50,060 - core.database - DEBUG - [DB_OP] Create tables completed in 1.8335s
+2026-08-16 05:57:50,123 - core.database - INFO - Lazy database initialization completed successfully
+2026-08-16 05:57:50,124 - core.database - DEBUG - [DB_OP] Database session created successfully in 1.9019s
+2026-08-16 05:57:51,080 - services.visitor_logs - INFO - Created visitor_logs with id: 98
+2026-08-16 05:57:51,084 - core.database - DEBUG - [DB_OP] Database session cleanup after 2.8619s
+2026-08-16 05:59:21,149 - core.database - DEBUG - [DB_OP] Starting get_db session creation
+2026-08-16 05:59:21,149 - core.database - DEBUG - [DB_OP] Database session created successfully in 0.0005s
+2026-08-16 05:59:21,151 - core.database - DEBUG - [DB_OP] Starting get_db session creation
+2026-08-16 05:59:21,151 - core.database - DEBUG - [DB_OP] Database session created successfully in 0.0002s
+2026-08-16 05:59:21,531 - core.database - DEBUG - [DB_OP] Database session cleanup after 0.3819s
+2026-08-16 05:59:21,978 - services.visitor_logs - INFO - Created visitor_logs with id: 99
+2026-08-16 05:59:21,978 - core.database - DEBUG - [DB_OP] Database session cleanup after 0.8273s
+2026-08-16 05:59:23,267 - core.database - DEBUG - [DB_OP] Starting get_db session creation
+2026-08-16 05:59:23,267 - core.database - DEBUG - [DB_OP] Database session created successfully in 0.0004s
+2026-08-16 05:59:23,270 - core.database - DEBUG - [DB_OP] Starting get_db session creation
+2026-08-16 05:59:23,270 - core.database - DEBUG - [DB_OP] Database session created successfully in 0.0002s
+2026-08-16 05:59:23,715 - core.database - DEBUG - [DB_OP] Database session cleanup after 0.4484s
+2026-08-16 05:59:23,963 - services.visitor_logs - INFO - Created visitor_logs with id: 100
+2026-08-16 05:59:23,963 - core.database - DEBUG - [DB_OP] Database session cleanup after 0.6933s
+2026-08-16 06:00:00,538 - services.database - DEBUG - [DB_OP] Starting database close
+2026-08-16 06:00:00,671 - core.database - INFO - Database connection closed and engine disposed
+2026-08-16 06:00:00,671 - services.database - INFO - Database connections closed
+2026-08-16 06:00:00,671 - services.database - DEBUG - [DB_OP] Database close completed in 0.1327s
+2026-08-16 06:00:16,296 - main - INFO - === Logging system initialized ===
+2026-08-16 06:00:16,296 - main - INFO - Log file: logs/app_20260816.log
+2026-08-16 06:00:16,296 - main - INFO - Log level: DEBUG
+2026-08-16 06:00:16,296 - main - INFO - Log date: 20260816
+2026-08-16 06:00:16,532 - main - INFO - Included router: routers.admin.router
+2026-08-16 06:00:16,550 - main - INFO - Included router: routers.admin_users.router
+2026-08-16 06:00:16,578 - main - INFO - Included router: routers.aihub.router
+2026-08-16 06:00:16,591 - main - INFO - Included router: routers.auth.router
+2026-08-16 06:00:16,609 - main - INFO - Included router: routers.crypto_wallets.router
+2026-08-16 06:00:16,629 - main - INFO - Included router: routers.email_logs.router
+2026-08-16 06:00:16,647 - main - INFO - Included router: routers.feedbacks.router
+2026-08-16 06:00:16,649 - main - INFO - Included router: routers.health.router
+2026-08-16 06:00:16,676 - main - INFO - Included router: routers.report_runs.router
+2026-08-16 06:00:16,684 - main - INFO - Included router: routers.reports.router
+2026-08-16 06:00:16,695 - main - INFO - Included router: routers.settings.router
+2026-08-16 06:00:16,719 - main - INFO - Included router: routers.shared_maps.router
+2026-08-16 06:00:16,735 - main - INFO - Included router: routers.site_settings.router
+2026-08-16 06:00:16,761 - main - INFO - Included router: routers.storage.router
+2026-08-16 06:00:16,766 - main - INFO - Included router: routers.user.router
+2026-08-16 06:00:16,784 - main - INFO - Included router: routers.visitor_logs.router
+2026-08-16 06:00:16,785 - main - INFO - === Application startup initiated ===
+2026-08-16 06:00:16,786 - services.database - INFO - Ignore database initialization
+2026-08-16 06:00:16,786 - services.mock_data - INFO - Ignore initialize data
+2026-08-16 06:00:16,786 - services.auth - INFO - Ignore initialize admin
+2026-08-16 06:00:16,786 - main - INFO - === Application startup completed successfully ===
+2026-08-16 06:00:18,194 - services.database - DEBUG - [DB_OP] Starting database close
+2026-08-16 06:00:18,195 - services.database - INFO - Database connections closed
+2026-08-16 06:00:18,195 - services.database - DEBUG - [DB_OP] Database close completed in 0.0006s
+2026-08-16 06:01:04,215 - main - INFO - === Logging system initialized ===
+2026-08-16 06:01:04,215 - main - INFO - Log file: logs/app_20260816.log
+2026-08-16 06:01:04,215 - main - INFO - Log level: DEBUG
+2026-08-16 06:01:04,215 - main - INFO - Log date: 20260816
+2026-08-16 06:01:04,442 - main - INFO - Included router: routers.admin.router
+2026-08-16 06:01:04,464 - main - INFO - Included router: routers.admin_users.router
+2026-08-16 06:01:04,496 - main - INFO - Included router: routers.aihub.router
+2026-08-16 06:01:04,514 - main - INFO - Included router: routers.auth.router
+2026-08-16 06:01:04,534 - main - INFO - Included router: routers.crypto_wallets.router
+2026-08-16 06:01:04,556 - main - INFO - Included router: routers.email_logs.router
+2026-08-16 06:01:04,580 - main - INFO - Included router: routers.feedbacks.router
+2026-08-16 06:01:04,582 - main - INFO - Included router: routers.health.router
+2026-08-16 06:01:04,608 - main - INFO - Included router: routers.report_runs.router
+2026-08-16 06:01:04,618 - main - INFO - Included router: routers.reports.router
+2026-08-16 06:01:04,628 - main - INFO - Included router: routers.settings.router
+2026-08-16 06:01:04,649 - main - INFO - Included router: routers.shared_maps.router
+2026-08-16 06:01:04,666 - main - INFO - Included router: routers.site_settings.router
+2026-08-16 06:01:04,687 - main - INFO - Included router: routers.storage.router
+2026-08-16 06:01:04,693 - main - INFO - Included router: routers.user.router
+2026-08-16 06:01:04,712 - main - INFO - Included router: routers.visitor_logs.router
+2026-08-16 06:01:04,714 - main - INFO - === Application startup initiated ===
+2026-08-16 06:01:04,714 - services.database - INFO - Ignore database initialization
+2026-08-16 06:01:04,714 - services.mock_data - INFO - Ignore initialize data
+2026-08-16 06:01:04,714 - services.auth - INFO - Ignore initialize admin
+2026-08-16 06:01:04,714 - main - INFO - === Application startup completed successfully ===
+2026-08-16 06:01:18,671 - core.database - DEBUG - [DB_OP] Starting get_db session creation
+2026-08-16 06:01:18,671 - core.database - WARNING - Database session maker not available, attempting lazy initialization...
+2026-08-16 06:01:18,671 - core.database - WARNING - Database not initialized, attempting lazy initialization...
+2026-08-16 06:01:18,671 - core.database - INFO - Starting database initialization...
+2026-08-16 06:01:18,671 - core.config - DEBUG - Read dynamic attribute database_url from environment variable DATABASE_URL
+2026-08-16 06:01:18,672 - core.database - INFO - Normalizing database URL for async compatibility...
+2026-08-16 06:01:18,672 - core.database - INFO - Creating async database engine...
+2026-08-16 06:01:18,673 - core.database - INFO - Using QueuePool with connection pooling for non-Lambda environment
+2026-08-16 06:01:18,673 - core.database - INFO - Database engine created successfully
+2026-08-16 06:01:18,674 - core.database - INFO - Creating async session maker...
+2026-08-16 06:01:18,674 - core.database - INFO - Async session maker created successfully
+2026-08-16 06:01:18,674 - core.database - INFO - Database connection initialized successfully
+2026-08-16 06:01:18,674 - core.database - DEBUG - [DB_OP] Starting create_tables
+2026-08-16 06:01:18,674 - core.database - INFO - 🔧 Starting table creation...
+2026-08-16 06:01:18,681 - core.database - DEBUG - [DB_OP] Starting get_db session creation
+2026-08-16 06:01:18,682 - core.database - DEBUG - [DB_OP] Database session created successfully in 0.0003s
+2026-08-16 06:01:19,976 - core.database - DEBUG - [DB_OP] Database session cleanup after 1.2951s
+2026-08-16 06:01:20,473 - core.database - INFO - Tables initialized successfully
+2026-08-16 06:01:20,473 - core.database - DEBUG - [DB_OP] Create tables completed in 1.7990s
+2026-08-16 06:01:20,536 - core.database - INFO - Lazy database initialization completed successfully
+2026-08-16 06:01:20,536 - core.database - DEBUG - [DB_OP] Database session created successfully in 1.8654s
+2026-08-16 06:01:21,476 - services.visitor_logs - INFO - Created visitor_logs with id: 101
+2026-08-16 06:01:21,476 - core.database - DEBUG - [DB_OP] Database session cleanup after 2.8058s
+2026-08-16 06:01:21,560 - core.database - DEBUG - [DB_OP] Starting get_db session creation
+2026-08-16 06:01:21,561 - core.database - DEBUG - [DB_OP] Database session created successfully in 0.0004s
+2026-08-16 06:01:21,562 - core.database - DEBUG - [DB_OP] Starting get_db session creation
+2026-08-16 06:01:21,562 - core.database - DEBUG - [DB_OP] Database session created successfully in 0.0002s
+2026-08-16 06:01:21,997 - core.database - DEBUG - [DB_OP] Database session cleanup after 0.4354s
+2026-08-16 06:01:22,309 - services.visitor_logs - INFO - Created visitor_logs with id: 102
+2026-08-16 06:01:22,310 - core.database - DEBUG - [DB_OP] Database session cleanup after 0.7498s
+2026-08-16 06:03:28,239 - core.database - DEBUG - [DB_OP] Starting get_db session creation
+2026-08-16 06:03:28,240 - core.database - DEBUG - [DB_OP] Database session created successfully in 0.0004s
+2026-08-16 06:03:28,241 - core.database - DEBUG - [DB_OP] Starting get_db session creation
+2026-08-16 06:03:28,241 - core.database - DEBUG - [DB_OP] Database session created successfully in 0.0002s
+2026-08-16 06:03:28,616 - core.database - DEBUG - [DB_OP] Database session cleanup after 0.3750s
+2026-08-16 06:03:28,991 - services.visitor_logs - INFO - Created visitor_logs with id: 103
+2026-08-16 06:03:28,991 - core.database - DEBUG - [DB_OP] Database session cleanup after 0.7520s
+2026-08-16 06:03:30,889 - core.database - DEBUG - [DB_OP] Starting get_db session creation
+2026-08-16 06:03:30,889 - core.database - DEBUG - [DB_OP] Database session created successfully in 0.0004s
+2026-08-16 06:03:30,891 - core.database - DEBUG - [DB_OP] Starting get_db session creation
+2026-08-16 06:03:30,891 - core.database - DEBUG - [DB_OP] Database session created successfully in 0.0002s
+2026-08-16 06:03:31,264 - core.database - DEBUG - [DB_OP] Database session cleanup after 0.3756s
+2026-08-16 06:03:31,577 - services.visitor_logs - INFO - Created visitor_logs with id: 104
+2026-08-16 06:03:31,577 - core.database - DEBUG - [DB_OP] Database session cleanup after 0.6869s
+2026-08-16 06:04:26,309 - services.database - DEBUG - [DB_OP] Starting database close
+2026-08-16 06:04:26,442 - core.database - INFO - Database connection closed and engine disposed
+2026-08-16 06:04:26,443 - services.database - INFO - Database connections closed
+2026-08-16 06:04:26,443 - services.database - DEBUG - [DB_OP] Database close completed in 0.1337s
+2026-08-16 06:04:42,271 - main - INFO - === Logging system initialized ===
+2026-08-16 06:04:42,272 - main - INFO - Log file: logs/app_20260816.log
+2026-08-16 06:04:42,272 - main - INFO - Log level: DEBUG
+2026-08-16 06:04:42,272 - main - INFO - Log date: 20260816
+2026-08-16 06:04:42,523 - main - INFO - Included router: routers.admin.router
+2026-08-16 06:04:42,548 - main - INFO - Included router: routers.admin_users.router
+2026-08-16 06:04:42,585 - main - INFO - Included router: routers.aihub.router
+2026-08-16 06:04:42,598 - main - INFO - Included router: routers.auth.router
+2026-08-16 06:04:42,620 - main - INFO - Included router: routers.crypto_wallets.router
+2026-08-16 06:04:42,641 - main - INFO - Included router: routers.email_logs.router
+2026-08-16 06:04:42,662 - main - INFO - Included router: routers.feedbacks.router
+2026-08-16 06:04:42,664 - main - INFO - Included router: routers.health.router
+2026-08-16 06:04:42,694 - main - INFO - Included router: routers.report_runs.router
+2026-08-16 06:04:42,702 - main - INFO - Included router: routers.reports.router
+2026-08-16 06:04:42,716 - main - INFO - Included router: routers.settings.router
+2026-08-16 06:04:42,740 - main - INFO - Included router: routers.shared_maps.router
+2026-08-16 06:04:42,762 - main - INFO - Included router: routers.site_settings.router
+2026-08-16 06:04:42,789 - main - INFO - Included router: routers.storage.router
+2026-08-16 06:04:42,796 - main - INFO - Included router: routers.user.router
+2026-08-16 06:04:42,819 - main - INFO - Included router: routers.visitor_logs.router
+2026-08-16 06:04:42,821 - main - INFO - === Application startup initiated ===
+2026-08-16 06:04:42,821 - services.database - INFO - Ignore database initialization
+2026-08-16 06:04:42,822 - services.mock_data - INFO - Ignore initialize data
+2026-08-16 06:04:42,822 - services.auth - INFO - Ignore initialize admin
+2026-08-16 06:04:42,822 - main - INFO - === Application startup completed successfully ===
+2026-08-16 06:04:44,298 - services.database - DEBUG - [DB_OP] Starting database close
+2026-08-16 06:04:44,298 - services.database - INFO - Database connections closed
+2026-08-16 06:04:44,299 - services.database - DEBUG - [DB_OP] Database close completed in 0.0004s
+2026-08-16 06:05:02,443 - main - INFO - === Logging system initialized ===
+2026-08-16 06:05:02,444 - main - INFO - Log file: logs/app_20260816.log
+2026-08-16 06:05:02,444 - main - INFO - Log level: DEBUG
+2026-08-16 06:05:02,444 - main - INFO - Log date: 20260816
+2026-08-16 06:05:02,708 - main - INFO - Included router: routers.admin.router
+2026-08-16 06:05:02,742 - main - INFO - Included router: routers.admin_users.router
+2026-08-16 06:05:02,772 - main - INFO - Included router: routers.aihub.router
+2026-08-16 06:05:02,785 - main - INFO - Included router: routers.auth.router
+2026-08-16 06:05:02,803 - main - INFO - Included router: routers.crypto_wallets.router
+2026-08-16 06:05:02,827 - main - INFO - Included router: routers.email_logs.router
+2026-08-16 06:05:02,845 - main - INFO - Included router: routers.feedbacks.router
+2026-08-16 06:05:02,847 - main - INFO - Included router: routers.health.router
+2026-08-16 06:05:02,870 - main - INFO - Included router: routers.report_runs.router
+2026-08-16 06:05:02,878 - main - INFO - Included router: routers.reports.router
+2026-08-16 06:05:02,887 - main - INFO - Included router: routers.settings.router
+2026-08-16 06:05:02,909 - main - INFO - Included router: routers.shared_maps.router
+2026-08-16 06:05:02,926 - main - INFO - Included router: routers.site_settings.router
+2026-08-16 06:05:02,947 - main - INFO - Included router: routers.storage.router
+2026-08-16 06:05:02,952 - main - INFO - Included router: routers.user.router
+2026-08-16 06:05:02,970 - main - INFO - Included router: routers.visitor_logs.router
+2026-08-16 06:05:02,971 - main - INFO - === Application startup initiated ===
+2026-08-16 06:05:02,971 - services.database - INFO - Ignore database initialization
+2026-08-16 06:05:02,971 - services.mock_data - INFO - Ignore initialize data
+2026-08-16 06:05:02,972 - services.auth - INFO - Ignore initialize admin
+2026-08-16 06:05:02,972 - main - INFO - === Application startup completed successfully ===

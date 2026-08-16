@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, forwardRef, useImperativeHandle, useCallback } from "react";
+import { useState, useRef, useEffect, forwardRef, useImperativeHandle, useCallback, useMemo } from "react";
 import {
   MindMapNode,
   NodeAlign,
@@ -42,6 +42,7 @@ interface MindMapCanvasProps {
   onFinishEdit: (id: string, text: string) => void;
   onAddChild: (parentId: string) => void;
   onReparentNode: (nodeId: string, newParentId: string) => void;
+  readOnly?: boolean;
 }
 
 export interface ImageExportResult {
@@ -223,7 +224,7 @@ function normalizeUrl(url: string): string {
 }
 
 export const MindMapCanvas = forwardRef<MindMapCanvasHandle, MindMapCanvasProps>(
-  ({ root, selectedNodeId, editingNodeId, isRTL: isRTLLayout, labels, onSelectNode, onStartEdit, onFinishEdit, onAddChild, onReparentNode }, ref) => {
+  ({ root, selectedNodeId, editingNodeId, isRTL: isRTLLayout, labels, onSelectNode, onStartEdit, onFinishEdit, onAddChild, onReparentNode, readOnly = false }, ref) => {
     const [zoom, setZoom] = useState(1);
     const [pan, setPan] = useState({ x: EDGE_MARGIN, y: EDGE_MARGIN });
     const [isPanning, setIsPanning] = useState(false);
@@ -245,6 +246,10 @@ export const MindMapCanvas = forwardRef<MindMapCanvasHandle, MindMapCanvasProps>
     const dragOffset = useRef({ x: 0, y: 0 });
     const dragStartPos = useRef<{ x: number; y: number } | null>(null);
     const isDragActive = useRef(false);
+    // Long-press state for mobile drag
+    const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const longPressTriggered = useRef(false);
+    const longPressStartPos = useRef<{ x: number; y: number } | null>(null);
 
     useEffect(() => {
       zoomRef.current = zoom;
@@ -260,23 +265,40 @@ export const MindMapCanvas = forwardRef<MindMapCanvasHandle, MindMapCanvasProps>
       [editingNodeId, editText]
     );
 
-    const positions: NodePosition[] = [];
-    calculateLayout(root, 0, 0, positions, isRTLLayout, textOf);
+    // Memoize layout calculation – prevents expensive recalculation during zoom/pan
+    const { positions, contentMinX, contentMaxX, contentMinY, contentMaxY } = useMemo(() => {
+      const pos: NodePosition[] = [];
+      calculateLayout(root, 0, 0, pos, isRTLLayout, textOf);
+      if (pos.length === 0) return { positions: pos, contentMinX: 0, contentMaxX: 0, contentMinY: 0, contentMaxY: 0 };
+      const minX = Math.min(...pos.map((p) => p.x));
+      const maxX = Math.max(...pos.map((p) => p.x + p.width));
+      const minY = Math.min(...pos.map((p) => p.y));
+      const maxY = Math.max(...pos.map((p) => p.y + p.height));
+      return { positions: pos, contentMinX: minX, contentMaxX: maxX, contentMinY: minY, contentMaxY: maxY };
+    }, [root, isRTLLayout, textOf]);
 
-    const contentMinX = Math.min(...positions.map((p) => p.x));
-    const contentMaxX = Math.max(...positions.map((p) => p.x + p.width));
-    const contentMinY = Math.min(...positions.map((p) => p.y));
-    const contentMaxY = Math.max(...positions.map((p) => p.y + p.height));
-
-    /** Same visual margin from the near edge in both LTR and RTL. */
+    /** Compute pan so that the root node is centered in viewport at zoom=1. */
     const computeInitialPan = useCallback(() => {
-      const containerWidth = containerRef.current?.clientWidth ?? 0;
+      const container = containerRef.current;
+      const containerWidth = container?.clientWidth ?? 0;
+      const containerHeight = container?.clientHeight ?? 0;
+      // Find root node position
+      const rootPos = positions.find((p) => p.id === root.id);
+      if (rootPos && containerWidth > 0 && containerHeight > 0) {
+        const rootCenterX = rootPos.x + rootPos.width / 2;
+        const rootCenterY = rootPos.y + rootPos.height / 2;
+        return {
+          x: containerWidth / 2 - rootCenterX,
+          y: containerHeight / 2 - rootCenterY,
+        };
+      }
+      // Fallback: edge margin
       if (isRTLLayout && containerWidth > 0) {
         return { x: containerWidth - EDGE_MARGIN - contentMaxX, y: EDGE_MARGIN };
       }
       return { x: EDGE_MARGIN - contentMinX, y: EDGE_MARGIN };
       // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [isRTLLayout, contentMaxX, contentMinX]);
+    }, [isRTLLayout, contentMaxX, contentMinX, positions, root.id]);
 
     const resetView = useCallback(() => {
       const next = computeInitialPan();
@@ -495,7 +517,8 @@ export const MindMapCanvas = forwardRef<MindMapCanvasHandle, MindMapCanvasProps>
       let minDist = Infinity;
       for (const pos of positions) {
         if (excludeIds.includes(pos.id)) continue;
-        // RTL children attach to the parent's left edge, LTR to the right edge.
+        // In RTL: the dragged node's RIGHT edge connects to the target's LEFT edge
+        // In LTR: the dragged node's LEFT edge connects to the target's RIGHT edge
         const edgeX = isRTLLayout ? pos.x : pos.x + pos.width;
         const edgeY = pos.y + pos.height / 2;
         const dist = Math.sqrt((edgeX - x) ** 2 + (edgeY - y) ** 2);
@@ -504,7 +527,8 @@ export const MindMapCanvas = forwardRef<MindMapCanvasHandle, MindMapCanvasProps>
           nearest = pos.id;
         }
       }
-      return nearest;
+      // Only snap if within a reasonable distance
+      return minDist < 200 ? nearest : null;
     }, [positions, isRTLLayout]);
 
     const cancelDrag = useCallback(() => {
@@ -567,15 +591,20 @@ export const MindMapCanvas = forwardRef<MindMapCanvasHandle, MindMapCanvasProps>
       const parentPos = findPosition(nearestParentId);
       if (!parentPos) return null;
 
+      // Parent connection point: left edge in RTL, right edge in LTR
       const startX = isRTLLayout
-        ? parentPos.x - PLUS_BUTTON_RADIUS * 2 - 4
-        : parentPos.x + parentPos.width + PLUS_BUTTON_RADIUS * 2 + 4;
+        ? parentPos.x
+        : parentPos.x + parentPos.width;
       const startY = parentPos.y + parentPos.height / 2;
-      const midX = (startX + dragPos.x) / 2;
+      // Dragged node connection point: right edge in RTL, left edge in LTR
+      const draggedWidth = positions.find((p) => p.id === draggingNodeId)?.width ?? NODE_MIN_WIDTH;
+      const endX = isRTLLayout ? dragPos.x + draggedWidth / 2 : dragPos.x - draggedWidth / 2;
+      const endY = dragPos.y;
+      const midX = (startX + endX) / 2;
 
       return (
         <path
-          d={`M ${startX} ${startY} C ${midX} ${startY}, ${midX} ${dragPos.y}, ${dragPos.x} ${dragPos.y}`}
+          d={`M ${startX} ${startY} C ${midX} ${startY}, ${midX} ${endY}, ${endX} ${endY}`}
           fill="none"
           stroke="#94a3b8"
           strokeWidth={2}
@@ -700,25 +729,57 @@ export const MindMapCanvas = forwardRef<MindMapCanvasHandle, MindMapCanvasProps>
         elements.push(
           <g
             key={node.id}
-            className="cursor-pointer"
+            className={readOnly ? "cursor-default" : "cursor-pointer"}
             onClick={(e) => {
               e.stopPropagation();
-              if (!isDragActive.current) onSelectNode(node.id);
+              if (!readOnly && !isDragActive.current) onSelectNode(node.id);
             }}
             onDoubleClick={(e) => {
               e.stopPropagation();
-              onStartEdit(node.id);
+              if (!readOnly) onStartEdit(node.id);
             }}
             onMouseDown={(e) => {
-              if (e.button === 0 && !isRoot && !isEditing) {
+              if (!readOnly && e.button === 0 && !isRoot && !isEditing) {
                 e.stopPropagation();
                 startNodeDrag(node.id, pos, e.clientX, e.clientY);
               }
             }}
             onTouchStart={(e) => {
-              if (!isRoot && !isEditing && e.touches.length === 1) {
-                startNodeDrag(node.id, pos, e.touches[0].clientX, e.touches[0].clientY);
+              if (!readOnly && !isRoot && !isEditing && e.touches.length === 1) {
+                // Long-press: start drag only after holding for 500ms
+                longPressTriggered.current = false;
+                const touch = e.touches[0];
+                const startX = touch.clientX;
+                const startY = touch.clientY;
+                longPressStartPos.current = { x: startX, y: startY };
+                if (longPressTimer.current) clearTimeout(longPressTimer.current);
+                longPressTimer.current = setTimeout(() => {
+                  longPressTriggered.current = true;
+                  startNodeDrag(node.id, pos, startX, startY);
+                }, 500);
               }
+            }}
+            onTouchMove={(e) => {
+              // Cancel long-press only if finger moved more than 10px (avoid jitter)
+              if (longPressTimer.current && !longPressTriggered.current && e.touches.length === 1) {
+                const touch = e.touches[0];
+                const sp = longPressStartPos.current;
+                if (sp) {
+                  const dist = Math.sqrt((touch.clientX - sp.x) ** 2 + (touch.clientY - sp.y) ** 2);
+                  if (dist > 10) {
+                    clearTimeout(longPressTimer.current);
+                    longPressTimer.current = null;
+                    longPressStartPos.current = null;
+                  }
+                }
+              }
+            }}
+            onTouchEnd={() => {
+              if (longPressTimer.current) {
+                clearTimeout(longPressTimer.current);
+                longPressTimer.current = null;
+              }
+              longPressStartPos.current = null;
             }}
           >
             <rect
@@ -807,7 +868,7 @@ export const MindMapCanvas = forwardRef<MindMapCanvasHandle, MindMapCanvasProps>
         }
       }
 
-      if (!isBeingDragged) {
+      if (!isBeingDragged && !readOnly) {
         const plusX = isRTLLayout
           ? pos.x - PLUS_BUTTON_RADIUS - 4
           : pos.x + pos.width + PLUS_BUTTON_RADIUS + 4;
@@ -817,13 +878,31 @@ export const MindMapCanvas = forwardRef<MindMapCanvasHandle, MindMapCanvasProps>
           <g
             key={`plus-${node.id}`}
             className="cursor-pointer"
+            onTouchStart={(e) => {
+              // Prevent focus loss (blur) on the editing textarea so text isn't lost
+              e.preventDefault();
+              e.stopPropagation();
+            }}
             onClick={(e) => {
               e.stopPropagation();
+              // If currently editing any node, commit the text first
+              if (editingNodeId) {
+                const commitText = editText.trim();
+                // Use editText if non-empty; for same node use node.text as fallback
+                const fallback = editingNodeId === node.id ? node.text : commitText || node.text;
+                onFinishEdit(editingNodeId, commitText || fallback);
+              }
               onAddChild(node.id);
             }}
             onTouchEnd={(e) => {
               e.stopPropagation();
               e.preventDefault();
+              // Commit any ongoing edit before adding child
+              if (editingNodeId) {
+                const commitText = editText.trim();
+                const fallback = editingNodeId === node.id ? node.text : commitText || node.text;
+                onFinishEdit(editingNodeId, commitText || fallback);
+              }
               onAddChild(node.id);
             }}
           >
@@ -857,7 +936,9 @@ export const MindMapCanvas = forwardRef<MindMapCanvasHandle, MindMapCanvasProps>
 
       const excludeIds = getDescendantIds(root, draggingNodeId);
       const draggedWidth = positions.find((p) => p.id === draggingNodeId)?.width ?? NODE_MIN_WIDTH;
-      const probeX = isRTLLayout ? nodeX - draggedWidth / 2 : nodeX + draggedWidth / 2;
+      // In RTL: right edge of dragged node (nodeX + width/2) tries to connect to left edge of target
+      // In LTR: left edge of dragged node (nodeX - width/2) tries to connect to right edge of target
+      const probeX = isRTLLayout ? nodeX + draggedWidth / 2 : nodeX - draggedWidth / 2;
       setNearestParentId(findNearestNode(probeX, nodeY, excludeIds));
     }, [draggingNodeId, toLocalPoint, localToSvg, getDescendantIds, root, findNearestNode, isRTLLayout, positions]);
 

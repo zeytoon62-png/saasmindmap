@@ -505,3 +505,188 @@ async def upload_wallet_qr(
     await db.commit()
 
     return {"success": True, "object_key": object_key}
+
+
+# ========== Share Project ==========
+
+class ShareProjectRequest(BaseModel):
+    file_data: str
+    expiry_months: int = 3
+    password: Optional[str] = None
+
+
+@router.post("/share")
+async def create_share_link(
+    data: ShareProjectRequest,
+    db: AsyncSession = Depends(get_db),
+):
+    """Create a unique share link for a mind map project"""
+    import httpx
+    from services.storage import StorageService
+    from services.shared_maps import SharedMapsService
+    from schemas.storage import FileUpDownRequest
+
+    # Validate expiry: min 1 month, max 36 months (3 years)
+    expiry_months = max(1, min(36, data.expiry_months))
+
+    # Upload file data to object storage
+    import secrets as sec_mod
+    file_token = sec_mod.token_hex(16)
+    object_key = f"shared-maps/{file_token}.json"
+
+    storage = StorageService()
+    upload_req = FileUpDownRequest(bucket_name="shared-maps", object_key=object_key)
+    upload_resp = await storage.create_upload_url(upload_req)
+
+    if not upload_resp or not upload_resp.upload_url:
+        raise HTTPException(status_code=500, detail="Failed to get upload URL")
+
+    # Upload JSON content
+    async with httpx.AsyncClient(timeout=30) as http_client:
+        resp = await http_client.put(
+            upload_resp.upload_url,
+            content=data.file_data.encode("utf-8"),
+            headers={"Content-Type": "application/json"},
+        )
+        if resp.status_code >= 400:
+            raise HTTPException(status_code=500, detail="Upload failed")
+
+    # Create DB record
+    shared_service = SharedMapsService(db)
+    shared = await shared_service.create_share(
+        object_key=object_key,
+        expiry_months=expiry_months,
+        password=data.password,
+    )
+
+    # Build share URL (frontend route)
+    share_url = f"/shared/{shared.token}"
+    return {"success": True, "share_url": share_url, "token": shared.token}
+
+
+@router.get("/shared/{token}")
+async def get_shared_map(
+    token: str,
+    password: Optional[str] = None,
+    db: AsyncSession = Depends(get_db),
+):
+    """Access a shared mind map by token"""
+    import httpx
+    from services.storage import StorageService
+    from services.shared_maps import SharedMapsService
+    from schemas.storage import FileUpDownRequest
+
+    shared_service = SharedMapsService(db)
+    shared = await shared_service.get_by_token(token)
+
+    if not shared:
+        raise HTTPException(status_code=404, detail="Share link not found or expired")
+
+    # Check expiry
+    from datetime import timezone as tz
+    now = datetime.now(tz.utc)
+    expires = shared.expires_at
+    if expires.tzinfo is None:
+        expires = expires.replace(tzinfo=tz.utc)
+    if now > expires:
+        raise HTTPException(status_code=410, detail="Share link expired")
+
+    # Check if password is needed
+    needs_password = bool(shared.password_hash)
+    if needs_password and not password:
+        return {"needs_password": True, "has_data": False}
+
+    if needs_password:
+        if SharedMapsService.hash_password(password) != shared.password_hash:
+            raise HTTPException(status_code=403, detail="Invalid password")
+
+    # Get download URL for the stored JSON
+    storage = StorageService()
+    download_req = FileUpDownRequest(bucket_name="shared-maps", object_key=shared.object_key)
+    download_resp = await storage.create_download_url(download_req)
+
+    if not download_resp or not download_resp.download_url:
+        raise HTTPException(status_code=500, detail="Failed to retrieve shared data")
+
+    # Fetch the JSON content
+    async with httpx.AsyncClient(timeout=30) as http_client:
+        resp = await http_client.get(download_resp.download_url)
+        if resp.status_code >= 400:
+            raise HTTPException(status_code=500, detail="Failed to download shared data")
+        file_data = resp.text
+
+    return {"needs_password": False, "has_data": True, "data": file_data}
+
+
+@router.post("/share/cleanup")
+async def cleanup_expired_shares(db: AsyncSession = Depends(get_db)):
+    """Clean up expired shared maps"""
+    from services.shared_maps import SharedMapsService
+    shared_service = SharedMapsService(db)
+    deleted = await shared_service.cleanup_expired()
+    return {"success": True, "deleted_count": deleted}
+
+
+# ========== Standalone Storage Proxy Endpoints ==========
+
+class DownloadUrlRequest(BaseModel):
+    bucket_name: str
+    object_key: str
+
+
+@router.post("/upload-file")
+async def upload_file_standalone(
+    file: UploadFile = File(...),
+    bucket_name: str = Form("qr-images"),
+    object_key: str = Form(""),
+):
+    """
+    Standalone file upload endpoint.
+    Receives a file via multipart form, uploads it to object storage,
+    and returns the object_key.
+    """
+    import httpx
+    from services.storage import StorageService
+    from schemas.storage import FileUpDownRequest
+
+    if not object_key:
+        object_key = f"{bucket_name}/{file.filename}"
+
+    file_content = await file.read()
+
+    storage = StorageService()
+    upload_req = FileUpDownRequest(bucket_name=bucket_name, object_key=object_key)
+    upload_resp = await storage.create_upload_url(upload_req)
+
+    if not upload_resp or not upload_resp.upload_url:
+        raise HTTPException(status_code=500, detail="Failed to get upload URL")
+
+    async with httpx.AsyncClient(timeout=30) as http_client:
+        resp = await http_client.put(
+            upload_resp.upload_url,
+            content=file_content,
+            headers={"Content-Type": file.content_type or "application/octet-stream"},
+        )
+        if resp.status_code >= 400:
+            raise HTTPException(status_code=500, detail="Upload to storage failed")
+
+    return {"success": True, "object_key": object_key}
+
+
+@router.post("/download-url")
+async def get_download_url_standalone(data: DownloadUrlRequest):
+    """
+    Standalone download URL endpoint.
+    Returns a presigned download URL for the given bucket/object_key.
+    """
+    from services.storage import StorageService
+    from schemas.storage import FileUpDownRequest
+
+    storage = StorageService()
+    download_req = FileUpDownRequest(bucket_name=data.bucket_name, object_key=data.object_key)
+    download_resp = await storage.create_download_url(download_req)
+
+    if not download_resp or not download_resp.download_url:
+        raise HTTPException(status_code=500, detail="Failed to get download URL")
+
+    return {"download_url": download_resp.download_url}

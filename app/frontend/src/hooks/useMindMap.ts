@@ -130,6 +130,30 @@ export function useMindMap(newNodeText = "New Node", defaultMainIdea = "Main Ide
     }
   }, [data.root.id, updateTreeWithHistory, deepClone, findParent, newNodeText]);
 
+  const addSiblingAfter = useCallback((nodeId: string) => {
+    if (data.root.id === nodeId) return;
+    const newNodeId = crypto.randomUUID();
+    let inserted = false;
+    updateTreeWithHistory((root) => {
+      const newRoot = deepClone(root);
+      const parent = findParent(newRoot, nodeId);
+      if (!parent) return newRoot;
+      const index = parent.children.findIndex((c) => c.id === nodeId);
+      if (index === -1) return newRoot;
+
+      const inherited = resolveNodeColor(parent, getNodeDepth(newRoot, parent.id));
+      const sibling = createNode(newNodeText, inherited);
+      sibling.id = newNodeId;
+      parent.children.splice(index + 1, 0, sibling);
+      inserted = true;
+      return newRoot;
+    });
+    if (inserted) {
+      setSelectedNodeId(newNodeId);
+      setLastCreatedNodeId(newNodeId);
+    }
+  }, [data.root.id, updateTreeWithHistory, deepClone, findParent, newNodeText]);
+
   const deleteNode = useCallback((nodeId: string) => {
     if (data.root.id === nodeId) return;
     updateTreeWithHistory((root) => {
@@ -257,6 +281,34 @@ export function useMindMap(newNodeText = "New Node", defaultMainIdea = "Main Ide
     setIsModified(false);
   }, []);
 
+  /** Move a node one position up among its siblings (closer to index 0). */
+  const moveNodeUp = useCallback((nodeId: string) => {
+    if (data.root.id === nodeId) return;
+    updateTreeWithHistory((root) => {
+      const newRoot = deepClone(root);
+      const parent = findParent(newRoot, nodeId);
+      if (!parent) return newRoot;
+      const idx = parent.children.findIndex((c) => c.id === nodeId);
+      if (idx <= 0) return newRoot;
+      [parent.children[idx - 1], parent.children[idx]] = [parent.children[idx], parent.children[idx - 1]];
+      return newRoot;
+    });
+  }, [data.root.id, updateTreeWithHistory, deepClone, findParent]);
+
+  /** Move a node one position down among its siblings (closer to last index). */
+  const moveNodeDown = useCallback((nodeId: string) => {
+    if (data.root.id === nodeId) return;
+    updateTreeWithHistory((root) => {
+      const newRoot = deepClone(root);
+      const parent = findParent(newRoot, nodeId);
+      if (!parent) return newRoot;
+      const idx = parent.children.findIndex((c) => c.id === nodeId);
+      if (idx === -1 || idx >= parent.children.length - 1) return newRoot;
+      [parent.children[idx], parent.children[idx + 1]] = [parent.children[idx + 1], parent.children[idx]];
+      return newRoot;
+    });
+  }, [data.root.id, updateTreeWithHistory, deepClone, findParent]);
+
   return {
     data,
     selectedNodeId,
@@ -266,6 +318,7 @@ export function useMindMap(newNodeText = "New Node", defaultMainIdea = "Main Ide
     isModified,
     addChild,
     addSiblingBefore,
+    addSiblingAfter,
     deleteNode,
     updateNodeText,
     updateNodeColor,
@@ -273,6 +326,8 @@ export function useMindMap(newNodeText = "New Node", defaultMainIdea = "Main Ide
     updateNodeComment,
     updateNodeHyperlink,
     reparentNode,
+    moveNodeUp,
+    moveNodeDown,
     loadFromJSON,
     resetMap,
     findNode,

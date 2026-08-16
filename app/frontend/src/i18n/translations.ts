@@ -123,6 +123,24 @@ export interface Translations {
   telegramSupport: string;
   telegramContactText: string;
   feedbackSentSuccess: string;
+  // Node ordering
+  moveUp: string;
+  moveDown: string;
+  // Save filename
+  fileNameLabel: string;
+  fileNamePlaceholder: string;
+  // Share
+  shareProject: string;
+  shareExpiry: string;
+  shareExpiryMonths: string;
+  shareExpiryYears: string;
+  sharePassword: string;
+  sharePasswordPlaceholder: string;
+  shareLink: string;
+  shareCopyLink: string;
+  shareNote: string;
+  shareCreate: string;
+  shareGenerated: string;
 }
 
 export const translations: Record<Language, Translations> = {
@@ -234,6 +252,21 @@ export const translations: Record<Language, Translations> = {
     telegramSupport: "Telegram Support",
     telegramContactText: "Contact us on Telegram:",
     feedbackSentSuccess: "Feedback sent successfully!",
+    moveUp: "Move up",
+    moveDown: "Move down",
+    fileNameLabel: "File name",
+    fileNamePlaceholder: "mindmap",
+    shareProject: "Share",
+    shareExpiry: "Link expiry",
+    shareExpiryMonths: "months",
+    shareExpiryYears: "years",
+    sharePassword: "Password (optional)",
+    sharePasswordPlaceholder: "Set password...",
+    shareLink: "Share link",
+    shareCopyLink: "Copy link",
+    shareNote: "Your file is stored securely on our server and will be automatically deleted after expiry.",
+    shareCreate: "Create share link",
+    shareGenerated: "Link created!",
   },
   es: {
     appTitle: "Mapa Mental Personal",
@@ -343,6 +376,21 @@ export const translations: Record<Language, Translations> = {
     telegramSupport: "Soporte en Telegram",
     telegramContactText: "Contáctenos en Telegram:",
     feedbackSentSuccess: "¡Comentarios enviados con éxito!",
+    moveUp: "Mover arriba",
+    moveDown: "Mover abajo",
+    fileNameLabel: "Nombre del archivo",
+    fileNamePlaceholder: "mindmap",
+    shareProject: "Compartir",
+    shareExpiry: "Caducidad del enlace",
+    shareExpiryMonths: "meses",
+    shareExpiryYears: "años",
+    sharePassword: "Contraseña (opcional)",
+    sharePasswordPlaceholder: "Establecer contraseña...",
+    shareLink: "Enlace compartido",
+    shareCopyLink: "Copiar enlace",
+    shareNote: "Su archivo se almacena de forma segura en nuestro servidor y se eliminará automáticamente después de su vencimiento.",
+    shareCreate: "Crear enlace",
+    shareGenerated: "¡Enlace creado!",
   },
   fa: {
     appTitle: "نقشه ذهنی شخصی",
@@ -452,6 +500,21 @@ export const translations: Record<Language, Translations> = {
     telegramSupport: "پشتیبانی تلگرام",
     telegramContactText: "برای ارتباط با ما در تلگرام:",
     feedbackSentSuccess: "بازخورد با موفقیت ارسال شد!",
+    moveUp: "بالا بردن",
+    moveDown: "پایین بردن",
+    fileNameLabel: "نام فایل",
+    fileNamePlaceholder: "mindmap",
+    shareProject: "اشتراک‌گذاری",
+    shareExpiry: "مهلت لینک",
+    shareExpiryMonths: "ماه",
+    shareExpiryYears: "سال",
+    sharePassword: "رمز عبور (اختیاری)",
+    sharePasswordPlaceholder: "رمز عبور تنظیم کنید...",
+    shareLink: "لینک اشتراک",
+    shareCopyLink: "کپی لینک",
+    shareNote: "فایل شما به صورت امن روی سرور ما نگهداری می‌شود و پس از انقضا به صورت خودکار حذف خواهد شد.",
+    shareCreate: "ایجاد لینک اشتراک",
+    shareGenerated: "لینک ایجاد شد!",
   },
   ar: {
     appTitle: "الخريطة الذهنية الشخصية",
@@ -561,6 +624,21 @@ export const translations: Record<Language, Translations> = {
     telegramSupport: "دعم تيليجرام",
     telegramContactText: "تواصل معنا عبر تيليجرام:",
     feedbackSentSuccess: "تم إرسال الملاحظات بنجاح!",
+    moveUp: "تحريك لأعلى",
+    moveDown: "تحريك لأسفل",
+    fileNameLabel: "اسم الملف",
+    fileNamePlaceholder: "mindmap",
+    shareProject: "مشاركة",
+    shareExpiry: "صلاحية الرابط",
+    shareExpiryMonths: "أشهر",
+    shareExpiryYears: "سنوات",
+    sharePassword: "كلمة مرور (اختياري)",
+    sharePasswordPlaceholder: "تعيين كلمة المرور...",
+    shareLink: "رابط المشاركة",
+    shareCopyLink: "نسخ الرابط",
+    shareNote: "يتم تخزين ملفك بشكل آمن على خادمنا وسيتم حذفه تلقائيًا بعد انتهاء الصلاحية.",
+    shareCreate: "إنشاء رابط مشاركة",
+    shareGenerated: "تم إنشاء الرابط!",
   },
   zh: {
     appTitle: "个人思维导图",
@@ -670,6 +748,21 @@ export const translations: Record<Language, Translations> = {
     telegramSupport: "Telegram 支持",
     telegramContactText: "通过 Telegram 联系我们：",
     feedbackSentSuccess: "反馈已成功发送！",
+    moveUp: "上移",
+    moveDown: "下移",
+    fileNameLabel: "文件名",
+    fileNamePlaceholder: "mindmap",
+    shareProject: "分享",
+    shareExpiry: "链接有效期",
+    shareExpiryMonths: "个月",
+    shareExpiryYears: "年",
+    sharePassword: "密码（可选）",
+    sharePasswordPlaceholder: "设置密码...",
+    shareLink: "分享链接",
+    shareCopyLink: "复制链接",
+    shareNote: "您的文件安全存储在我们的服务器上，过期后将自动删除。",
+    shareCreate: "创建分享链接",
+    shareGenerated: "链接已创建！",
   },
   ru: {
     appTitle: "Личная интеллект-карта",
@@ -779,6 +872,21 @@ export const translations: Record<Language, Translations> = {
     telegramSupport: "Поддержка в Telegram",
     telegramContactText: "Свяжитесь с нами в Telegram:",
     feedbackSentSuccess: "Отзыв успешно отправлен!",
+    moveUp: "Вверх",
+    moveDown: "Вниз",
+    fileNameLabel: "Имя файла",
+    fileNamePlaceholder: "mindmap",
+    shareProject: "Поделиться",
+    shareExpiry: "Срок действия ссылки",
+    shareExpiryMonths: "мес.",
+    shareExpiryYears: "лет",
+    sharePassword: "Пароль (необязательно)",
+    sharePasswordPlaceholder: "Задать пароль...",
+    shareLink: "Ссылка",
+    shareCopyLink: "Копировать",
+    shareNote: "Ваш файл надёжно хранится на нашем сервере и будет автоматически удалён по истечении срока.",
+    shareCreate: "Создать ссылку",
+    shareGenerated: "Ссылка создана!",
   },
 };
 

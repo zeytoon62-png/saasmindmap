@@ -23,3 +23,5 @@ v4
 	2. Cryptocurrency Donation Section in Sidebar
 	3. Feedback System in Sidebar
 	4. Admin/Management Panel
+v7
+	very impruves!

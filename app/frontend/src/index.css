@@ -99,3 +99,44 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Hide any injected third-party badges/watermarks — covers all known patterns */
+[data-mgx-badge],
+[data-atoms-badge],
+div[class*="atoms-badge"],
+div[class*="mgx-badge"],
+div[class*="atoms-widget"],
+div[class*="mgx-widget"],
+div[class*="made-by"],
+div[class*="powered-by"],
+iframe[src*="atoms"],
+div[id*="atoms-widget"],
+div[id*="mgx-widget"],
+a[href*="atoms.com"],
+a[href*="atoms.io"],
+div[style*="z-index: 2147483647"],
+div[style*="z-index:2147483647"] {
+  display: none !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+  position: absolute !important;
+  width: 0 !important;
+  height: 0 !important;
+  overflow: hidden !important;
+  opacity: 0 !important;
+  clip: rect(0, 0, 0, 0) !important;
+}
+
+/* Catch fixed-position badge overlays injected at body level */
+body > div:not(#root):not([class]) {
+  display: none !important;
+}
+body > div[style*="fixed"]:not(#root) {
+  display: none !important;
+}
+body > a[style*="fixed"] {
+  display: none !important;
+}
+body > iframe {
+  display: none !important;
+}

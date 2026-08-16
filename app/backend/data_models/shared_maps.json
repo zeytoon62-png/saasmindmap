@@ -1,0 +1,36 @@
+{
+    "title": "shared_maps",
+    "type": "object",
+    "properties": {
+        "id": {
+            "type": "integer",
+            "description": "Auto-increment primary key"
+        },
+        "token": {
+            "type": "string",
+            "maxLength": 64,
+            "description": "Unique share token"
+        },
+        "object_key": {
+            "type": "string",
+            "maxLength": 512,
+            "description": "Object storage key for JSON data"
+        },
+        "password_hash": {
+            "type": "string",
+            "maxLength": 256,
+            "description": "SHA256 hash of optional password"
+        },
+        "expires_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Expiration timestamp"
+        }
+    },
+    "required": [
+        "id",
+        "token",
+        "object_key",
+        "expires_at"
+    ]
+}

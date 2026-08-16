@@ -3,7 +3,7 @@ import {
   MessageCircle, Menu, X, FilePlus, Download, PanelLeftClose, Check,
   ChevronDown, Globe, AlertCircle, AlignLeft, AlignCenter, AlignRight,
   Bold, List, ListOrdered, Type, FileJson, FileText, FileImage, FileCode2, FileDown,
-  Heart, Info, Send, Copy,
+  Heart, Info, Send, Copy, ArrowUp, ArrowDown, Share2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useRef, useState, useEffect } from "react";
@@ -11,8 +11,8 @@ import {
   MindMapData, MindMapNode, NodeFormatPatch,
   MIN_FONT_SIZE, MAX_FONT_SIZE, resolveFontSize,
 } from "@/types/mindmap";
+import { buildJSONString, SaveFormat } from "@/lib/mindmapExport";
 import { MindMapCanvasHandle } from "@/components/MindMapCanvas";
-import { SaveFormat } from "@/lib/mindmapExport";
 import { Language, getLanguageLabel } from "@/i18n/translations";
 import { useTranslation } from "@/i18n/useTranslation";
 import { client } from "@/lib/api";
@@ -33,10 +33,13 @@ interface ToolbarProps {
   onUpdateComment: (id: string, comment: string) => void;
   onUpdateHyperlink: (id: string, hyperlink: string) => void;
   onUpdateFormat: (id: string, patch: NodeFormatPatch) => void;
-  onSave: (format: SaveFormat) => void;
+  onSave: (format: SaveFormat, fileName?: string) => void;
   onLanguageChange: (lang: Language) => void;
   sidebarOpen: boolean;
   onToggleSidebar: () => void;
+  onMoveNodeUp: (id: string) => void;
+  onMoveNodeDown: (id: string) => void;
+  mapData: MindMapData;
 }
 
 const COLORS = [
@@ -70,6 +73,7 @@ export function Toolbar({
   onUpdateComment, onUpdateHyperlink, onUpdateFormat,
   onSave, onLanguageChange,
   sidebarOpen, onToggleSidebar,
+  onMoveNodeUp, onMoveNodeDown, mapData,
 }: ToolbarProps) {
   const { t, language, isRTL } = useTranslation();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -99,6 +103,18 @@ export function Toolbar({
   const [selectedCrypto, setSelectedCrypto] = useState<CryptoWallet | null>(null);
   const [copiedAddress, setCopiedAddress] = useState(false);
   const [resolvedQrUrl, setResolvedQrUrl] = useState("");
+
+  // Save filename state
+  const [saveFileName, setSaveFileName] = useState("mindmap");
+  const [selectedSaveFormat, setSelectedSaveFormat] = useState<SaveFormat | null>(null);
+
+  // Share state
+  const [showShare, setShowShare] = useState(false);
+  const [shareExpiry, setShareExpiry] = useState(3); // months
+  const [sharePassword, setSharePassword] = useState("");
+  const [shareLink, setShareLink] = useState("");
+  const [shareCreating, setShareCreating] = useState(false);
+  const [shareCopied, setShareCopied] = useState(false);
 
   const closeMenus = () => setMobileMenuOpen(false);
 
@@ -206,11 +222,53 @@ export function Toolbar({
 
   const handlePickFormat = (format: SaveFormat) => {
     setShowSaveFormats(false);
-    onSave(format);
+    setSelectedSaveFormat(format);
+    // Show filename input step
+  };
+
+  const handleConfirmSave = () => {
+    if (!selectedSaveFormat) return;
+    const name = saveFileName.trim() || "mindmap";
+    // Pass format to parent save handler (name is used in download)
+    onSave(selectedSaveFormat, name);
+    setSelectedSaveFormat(null);
+  };
+
+  const handleShareProject = async () => {
+    if (shareCreating) return;
+    setShareCreating(true);
+    try {
+      const jsonData = buildJSONString(mapData);
+      const res = await client.apiCall.invoke({
+        url: "/api/v1/admin/share",
+        method: "POST",
+        data: {
+          file_data: jsonData,
+          expiry_months: shareExpiry,
+          password: sharePassword.trim() || null,
+        },
+      });
+      const result = res as any;
+      const path = result?.data?.share_url || result?.share_url || "";
+      const link = path ? `${window.location.origin}${path}` : "";
+      setShareLink(link);
+    } catch (err) {
+      console.error("Share failed:", err);
+    }
+    setShareCreating(false);
+  };
+
+  const handleCopyShareLink = () => {
+    if (shareLink) {
+      navigator.clipboard.writeText(shareLink).catch(() => {});
+      setShareCopied(true);
+      setTimeout(() => setShareCopied(false), 2000);
+    }
   };
 
   const handleOpenAboutUs = async () => {
     closeMenus();
+    let fetchedText = "";
     try {
       const res = await client.apiCall.invoke({
         url: "/api/v1/admin/settings",
@@ -223,16 +281,14 @@ export function Toolbar({
       const langSetting = settings.find((s: any) => s.setting_key === langKey);
       const fallbackSetting = settings.find((s: any) => s.setting_key === "about_us_text");
       if (langSetting && langSetting.setting_value) {
-        setAboutUsText(langSetting.setting_value);
+        fetchedText = langSetting.setting_value;
       } else if (fallbackSetting && fallbackSetting.setting_value) {
-        setAboutUsText(fallbackSetting.setting_value);
+        fetchedText = fallbackSetting.setting_value;
       }
     } catch {
-      // Use default text if API fails
+      // If API fails, show nothing
     }
-    if (!aboutUsText) {
-      setAboutUsText("گروه فنی هنری انعکاس با هدف ارایه خدمات رایگان کوچک ولی مفید به شما کاربر گرامی اقدام به توسعه این سرویس نموده است. استفاده از این سرویس کاملا رایگان است. برای تداوم این سرویس از ما حمایت و ما را به دیگران معرفی کنید. برای هرگونه ارتباط با ما از این آیدی در تلگرام استفاده کنید: pmindmap");
-    }
+    setAboutUsText(fetchedText);
     setShowAboutUs(true);
   };
 
@@ -346,6 +402,14 @@ export function Toolbar({
       >
         <Download className="w-4 h-4 text-slate-500" />
         <span>{t.save}</span>
+      </button>
+
+      <button
+        onClick={() => { setShowShare(true); setShareLink(""); closeMenus(); }}
+        className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-slate-100 active:bg-slate-200 text-sm text-slate-700 cursor-pointer transition-colors w-full text-start"
+      >
+        <Share2 className="w-4 h-4 text-slate-500" />
+        <span>{t.shareProject}</span>
       </button>
 
       <div className="h-px bg-slate-200 my-2" />
@@ -671,7 +735,7 @@ export function Toolbar({
                 <span className="hidden sm:inline ml-1.5">{t.color}</span>
               </Button>
               {showColors && (
-                <div className="absolute top-full start-0 mt-2 bg-white rounded-xl shadow-xl border border-slate-200 p-4 z-50 w-72 max-w-[88vw]">
+                <div className="fixed inset-x-4 bottom-4 sm:absolute sm:inset-auto sm:top-full sm:start-0 sm:bottom-auto sm:mt-2 bg-white rounded-xl shadow-xl border border-slate-200 p-4 z-[60] sm:z-50 w-auto sm:w-72 max-w-full sm:max-w-[88vw] max-h-[70vh] overflow-y-auto">
                   <p className="text-xs font-semibold text-slate-500 mb-3 uppercase tracking-wide">{t.presetColors}</p>
                   <div className="grid grid-cols-4 gap-x-5 gap-y-4 place-items-center">
                     {COLORS.map((color) => {
@@ -801,16 +865,37 @@ export function Toolbar({
             </div>
 
             {!isRoot && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => onDeleteNode(selectedNode.id)}
-                className="h-9 w-9 sm:h-8 sm:w-auto sm:px-3 p-0 cursor-pointer hover:bg-red-50 active:bg-red-100 border-red-300 text-red-600"
-                title={t.deleteTooltip}
-              >
-                <Trash2 className="w-4 h-4" />
-                <span className="hidden sm:inline ml-1.5">{t.delete}</span>
-              </Button>
+              <>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => onMoveNodeUp(selectedNode.id)}
+                  className="h-9 w-9 sm:h-8 sm:w-8 p-0 cursor-pointer hover:bg-slate-100 active:bg-slate-200"
+                  title={t.moveUp}
+                >
+                  <ArrowUp className="w-4 h-4" />
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => onMoveNodeDown(selectedNode.id)}
+                  className="h-9 w-9 sm:h-8 sm:w-8 p-0 cursor-pointer hover:bg-slate-100 active:bg-slate-200"
+                  title={t.moveDown}
+                >
+                  <ArrowDown className="w-4 h-4" />
+                </Button>
+
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => onDeleteNode(selectedNode.id)}
+                  className="h-9 w-9 sm:h-8 sm:w-auto sm:px-3 p-0 cursor-pointer hover:bg-red-50 active:bg-red-100 border-red-300 text-red-600"
+                  title={t.deleteTooltip}
+                >
+                  <Trash2 className="w-4 h-4" />
+                  <span className="hidden sm:inline ml-1.5">{t.delete}</span>
+                </Button>
+              </>
             )}
           </>
         )}
@@ -837,7 +922,7 @@ export function Toolbar({
       </div>
 
       {/* Save format submenu */}
-      {showSaveFormats && (
+      {showSaveFormats && !selectedSaveFormat && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/30" onClick={() => setShowSaveFormats(false)} />
           <div className="relative bg-white rounded-xl shadow-xl p-5 w-80 max-w-full">
@@ -860,6 +945,114 @@ export function Toolbar({
                 {t.cancelButton}
               </Button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Filename input step */}
+      {selectedSaveFormat && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/30" onClick={() => setSelectedSaveFormat(null)} />
+          <div className="relative bg-white rounded-xl shadow-xl p-5 w-80 max-w-full">
+            <p className="text-sm font-semibold mb-3">{t.fileNameLabel}</p>
+            <div className="flex items-center gap-2">
+              <input
+                type="text"
+                value={saveFileName}
+                onChange={(e) => setSaveFileName(e.target.value)}
+                placeholder={t.fileNamePlaceholder}
+                className="flex-1 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-300"
+                dir="auto"
+                autoFocus
+                onKeyDown={(e) => { if (e.key === "Enter") handleConfirmSave(); }}
+              />
+              <span className="text-sm text-slate-500">.{selectedSaveFormat}</span>
+            </div>
+            <div className="flex justify-end gap-2 mt-4">
+              <Button variant="outline" size="sm" onClick={() => setSelectedSaveFormat(null)} className="cursor-pointer">
+                {t.cancelButton}
+              </Button>
+              <Button size="sm" onClick={handleConfirmSave} className="cursor-pointer">
+                {t.saveButton}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Share dialog */}
+      {showShare && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/30" onClick={() => { setShowShare(false); setShareLink(""); }} />
+          <div className="relative bg-white rounded-xl shadow-xl p-5 w-96 max-w-full">
+            <p className="text-sm font-semibold mb-3">{t.shareProject}</p>
+
+            {!shareLink ? (
+              <>
+                <div className="mb-3">
+                  <label className="text-xs text-slate-500 mb-1 block">{t.shareExpiry}</label>
+                  <select
+                    value={shareExpiry}
+                    onChange={(e) => setShareExpiry(Number(e.target.value))}
+                    className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-300 cursor-pointer"
+                  >
+                    <option value={1}>1 {t.shareExpiryMonths}</option>
+                    <option value={3}>3 {t.shareExpiryMonths}</option>
+                    <option value={6}>6 {t.shareExpiryMonths}</option>
+                    <option value={12}>12 {t.shareExpiryMonths} (1 {t.shareExpiryYears})</option>
+                    <option value={24}>24 {t.shareExpiryMonths} (2 {t.shareExpiryYears})</option>
+                    <option value={36}>36 {t.shareExpiryMonths} (3 {t.shareExpiryYears})</option>
+                  </select>
+                </div>
+
+                <div className="mb-3">
+                  <label className="text-xs text-slate-500 mb-1 block">{t.sharePassword}</label>
+                  <input
+                    type="text"
+                    value={sharePassword}
+                    onChange={(e) => setSharePassword(e.target.value)}
+                    placeholder={t.sharePasswordPlaceholder}
+                    className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-300"
+                    dir="auto"
+                  />
+                </div>
+
+                <p className="text-xs text-slate-400 mb-4">{t.shareNote}</p>
+
+                <div className="flex justify-end gap-2">
+                  <Button variant="outline" size="sm" onClick={() => { setShowShare(false); setShareLink(""); }} className="cursor-pointer">
+                    {t.cancelButton}
+                  </Button>
+                  <Button size="sm" onClick={handleShareProject} disabled={shareCreating} className="cursor-pointer">
+                    {t.shareCreate}
+                  </Button>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="mb-3">
+                  <label className="text-xs text-slate-500 mb-1 block">{t.shareLink}</label>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="text"
+                      value={shareLink}
+                      readOnly
+                      className="flex-1 border border-slate-200 rounded-lg px-3 py-2 text-sm bg-slate-50"
+                      dir="ltr"
+                    />
+                    <Button size="sm" variant="outline" onClick={handleCopyShareLink} className="cursor-pointer shrink-0">
+                      {shareCopied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                    </Button>
+                  </div>
+                </div>
+                <p className="text-xs text-green-600 mb-3">{t.shareGenerated}</p>
+                <div className="flex justify-end">
+                  <Button variant="outline" size="sm" onClick={() => { setShowShare(false); setShareLink(""); }} className="cursor-pointer">
+                    {t.close}
+                  </Button>
+                </div>
+              </>
+            )}
           </div>
         </div>
       )}
@@ -941,9 +1134,11 @@ export function Toolbar({
           <div className="absolute inset-0 bg-black/30" onClick={() => setShowAboutUs(false)} />
           <div className="relative bg-white rounded-xl shadow-xl p-5 w-96 max-w-full">
             <p className="text-sm font-semibold mb-3">{t.aboutUsTitle}</p>
-            <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-wrap" dir="auto">
-              {aboutUsText}
-            </p>
+            {aboutUsText ? (
+              <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-wrap" dir="auto">
+                {aboutUsText}
+              </p>
+            ) : null}
             <div className="mt-4 flex items-center gap-2 text-xs text-blue-600">
               <Send className="w-3.5 h-3.5" />
               <span>Telegram:</span>
@@ -952,14 +1147,15 @@ export function Toolbar({
               </a>
             </div>
             <div className="flex justify-between items-center mt-4">
-              <a
-                href="https://t.me/pmindmap"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-sm text-pink-600 font-medium hover:underline cursor-pointer"
+              <button
+                onClick={() => {
+                  setShowAboutUs(false);
+                  handleOpenSupportUs();
+                }}
+                className="text-sm text-pink-600 font-medium hover:underline cursor-pointer bg-transparent border-none p-0"
               >
                 ❤️ {t.financialSupport}
-              </a>
+              </button>
               <Button variant="outline" size="sm" onClick={() => setShowAboutUs(false)} className="cursor-pointer">
                 {t.close}
               </Button>
