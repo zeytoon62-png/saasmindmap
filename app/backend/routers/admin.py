@@ -7,7 +7,7 @@ from sqlalchemy import select, func, and_, desc
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from core.database import get_db
-from services.admin_auth import AdminAuthService
+from services.admin_auth import AdminAuthService, ensure_default_admin
 from services.admin_users import Admin_usersService
 from services.crypto_wallets import Crypto_walletsService
 from services.site_settings import Site_settingsService
@@ -115,6 +115,10 @@ async def admin_login(
     db: AsyncSession = Depends(get_db),
 ):
     """Admin login"""
+    # First-run self-healing: seed a default admin if none exists yet, so the
+    # /manager panel is always reachable (even when mock-data init is skipped).
+    await ensure_default_admin(db)
+
     service = AdminAuthService(db)
     admin = await service.authenticate(data.username, data.password)
     if not admin:

@@ -1,7 +1,8 @@
 import logging
+import os
 import bcrypt
 from typing import Optional, Dict, Any
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from models.admin_users import Admin_users
@@ -31,7 +32,7 @@ class AdminAuthService:
         stmt = select(Admin_users).where(
             Admin_users.username == username,
             Admin_users.is_active == True
-        )
+        ).limit(1)
         result = await self.db.execute(stmt)
         admin = result.scalar_one_or_none()
         if admin and self.verify_password(password, admin.password_hash):
@@ -89,3 +90,24 @@ class AdminAuthService:
             await self.db.commit()
             return True
         return False
+
+
+async def ensure_default_admin(db: AsyncSession) -> None:
+    """Seed a default admin account if no admin users exist yet.
+
+    This is intentionally independent of the mock-data seeder, so the /manager
+    login always has a valid account even in deployments that skip mock
+    initialization. Credentials default to ``administrator`` / ``admin123`` and
+    can be overridden with the ``ADMIN_USERNAME`` / ``ADMIN_PASSWORD`` env vars.
+    """
+    username = os.getenv("ADMIN_USERNAME", "administrator")
+    password = os.getenv("ADMIN_PASSWORD", "admin123")
+
+    result = await db.execute(select(func.count()).select_from(Admin_users))
+    count = result.scalar() or 0
+    if count > 0:
+        return
+
+    service = AdminAuthService(db)
+    await service.create_admin(username, password, role="superadmin")
+    logger.info("Seeded default manager admin user: %s", username)
