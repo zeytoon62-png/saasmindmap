@@ -2,17 +2,17 @@ name: Deploy to Production
 
 on:
   push:
-    branches: [ main ]  # ??? ???? ??? master ???? ?? ?? ?? master ????? ????
+    branches: [ main ]
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Setup Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: '20'
 
@@ -22,19 +22,79 @@ jobs:
           npm install
           npm run build
 
-      - name: Deploy to Server via SSH
+      - name: Sync Backend Code
         uses: appleboy/ssh-action@v0.1.5
         with:
           host: 202.133.88.106
           username: deploy
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
+            set -e
             cd /home/deploy/mindmap
-            git pull origin main
-            cd app/backend
+
+            # Force-align with GitHub (robust against local divergence/dirty tree)
+            git fetch origin main
+            git reset --hard origin/main
+
+            # Ensure backend .env exists (DB connection string)
+            echo "DATABASE_URL=postgresql+asyncpg://deploy:Ebkh%4089215110@localhost:5432/mindmap" > /home/deploy/mindmap/app/backend/.env
+
+            cd /home/deploy/mindmap/app/backend
+
+            # Auto-create venv if missing
+            if [ ! -d "venv" ]; then
+              python3 -m venv venv
+            fi
+
             source venv/bin/activate
             pip install -r requirements.txt
-            export DATABASE_URL=postgresql+asyncpg://deploy:Ebkh%4089215110@localhost:5432/mindmap
+
+            # Write systemd unit. Use EnvironmentFile (not inline Environment=) so
+            # the %40 in the password is NOT mangled by systemd specifier expansion.
+            sudo tee /etc/systemd/system/mindmap.service > /dev/null << 'UNITEOF'
+            [Unit]
+            Description=MindMap FastAPI Backend
+            After=network.target
+
+            [Service]
+            Type=simple
+            User=deploy
+            WorkingDirectory=/home/deploy/mindmap/app/backend
+            EnvironmentFile=/home/deploy/mindmap/app/backend/.env
+            ExecStart=/home/deploy/mindmap/app/backend/venv/bin/uvicorn main:app --host 0.0.0.0 --port 8000
+            Restart=always
+
+            [Install]
+            WantedBy=multi-user.target
+            UNITEOF
+
+            sudo systemctl daemon-reload
+
+      - name: Deploy Frontend
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: 202.133.88.106
+          username: deploy
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          source: "app/frontend/dist/*"
+          target: "/home/deploy/mindmap/app/frontend/dist"
+          strip_components: 3
+          rm: true
+
+      - name: Restart Backend and Verify
+        uses: appleboy/ssh-action@v0.1.5
+        with:
+          host: 202.133.88.106
+          username: deploy
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            set -e
             sudo systemctl restart mindmap.service
-            cd /home/deploy/mindmap/app/frontend
-            # build ????? ??? ??????? ????? ???? ???????? ????? ?? build ???? ??? ???? ????
+            sleep 4
+            if sudo systemctl is-active --quiet mindmap.service; then
+              echo "Backend is running successfully"
+            else
+              echo "Backend failed to start. Last 30 log lines:"
+              sudo journalctl -u mindmap.service -n 30 --no-pager
+              exit 1
+            fi
