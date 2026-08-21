@@ -62,8 +62,14 @@ class EmailService:
             msg["Subject"] = subject
             msg.attach(MIMEText(body, "html", "utf-8"))
 
-            with smtplib.SMTP(config["host"], config["port"], timeout=15) as server:
-                server.starttls()
+            # Port 465 uses implicit TLS (SMTPS); other ports use STARTTLS.
+            if config["port"] == 465:
+                server = smtplib.SMTP_SSL(config["host"], config["port"], timeout=15)
+            else:
+                server = smtplib.SMTP(config["host"], config["port"], timeout=15)
+            with server:
+                if config["port"] != 465:
+                    server.starttls()
                 server.login(config["username"], config["password"])
                 server.sendmail(msg["From"], recipients, msg.as_string())
 

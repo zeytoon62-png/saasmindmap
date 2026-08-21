@@ -229,9 +229,14 @@ class DatabaseManager:
                 logger.error("Database engine not initialized")
                 raise RuntimeError("Database engine not initialized")
 
-            # logger.info("🔧 Starting table structure repair...")
-            # await self.check_and_repair_existing_tables()
-            # logger.info("🔧 Table structure repair completed")
+            # Repair existing tables first (add any columns that were introduced
+            # after the table was first created), then create any missing tables.
+            try:
+                logger.info("🔧 Starting table structure repair...")
+                await self.check_and_repair_existing_tables()
+                logger.info("🔧 Table structure repair completed")
+            except Exception as e:
+                logger.warning(f"Table structure repair skipped due to error: {e}")
 
             try:
                 logger.info("🔧 Starting table creation...")

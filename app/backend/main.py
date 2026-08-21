@@ -73,11 +73,24 @@ async def lifespan(app: FastAPI):
     await initialize_admin_user()
     # MODULE_STARTUP_END
 
+    # Start the background scheduler that sends batched normal-feedback emails.
+    import asyncio
+    from services.feedback_scheduler import run_feedback_scheduler
+
+    scheduler_task = asyncio.create_task(run_feedback_scheduler())
+
     logger.info("=== Application startup completed successfully ===")
-    yield
-    # MODULE_SHUTDOWN_START
-    await close_database()
-    # MODULE_SHUTDOWN_END
+    try:
+        yield
+    finally:
+        # MODULE_SHUTDOWN_START
+        scheduler_task.cancel()
+        try:
+            await scheduler_task
+        except (asyncio.CancelledError, Exception):
+            pass
+        await close_database()
+        # MODULE_SHUTDOWN_END
 
 
 app = FastAPI(

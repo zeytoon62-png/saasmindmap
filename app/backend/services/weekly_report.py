@@ -91,11 +91,15 @@ class WeeklyReportService:
         msg.attach(MIMEText(body, "html", "utf-8"))
 
         try:
-            server = smtplib.SMTP(smtp_host, smtp_port)
-            server.starttls()
-            server.login(smtp_username, smtp_password)
-            server.sendmail(smtp_from, REPORT_EMAIL, msg.as_string())
-            server.quit()
+            if smtp_port == 465:
+                server = smtplib.SMTP_SSL(smtp_host, smtp_port, timeout=15)
+            else:
+                server = smtplib.SMTP(smtp_host, smtp_port, timeout=15)
+            with server:
+                if smtp_port != 465:
+                    server.starttls()
+                server.login(smtp_username, smtp_password)
+                server.sendmail(smtp_from, REPORT_EMAIL, msg.as_string())
             logger.info(f"Weekly report email sent to {REPORT_EMAIL}")
             return True
         except Exception as e:
