@@ -7,7 +7,6 @@ import {
   getNodeDepth,
   resolveNodeColor,
   resolveFontSize,
-  countDescendants,
 } from "@/types/mindmap";
 import { EXPORT_WEBSITE } from "@/lib/mindmapExport";
 import { Maximize2, Minus, Plus, Crosshair } from "lucide-react";
@@ -67,7 +66,7 @@ const NODE_PADDING_Y = 5;
 const MAX_CHARS_PER_LINE = 22;
 const HORIZONTAL_GAP = 60;
 const VERTICAL_GAP = 14;
-const PLUS_BUTTON_RADIUS = 11;
+const PLUS_BUTTON_RADIUS = 8;
 const ICON_SIZE = 11;
 const ICON_PAD = 3;
 const EDGE_MARGIN = 40;
@@ -318,9 +317,9 @@ export const MindMapCanvas = forwardRef<MindMapCanvasHandle, MindMapCanvasProps>
       const viewHeight = container.clientHeight;
       if (viewWidth <= 0 || viewHeight <= 0) return;
 
-      // Include the trailing "+" buttons so nothing is clipped after fitting.
-      const boundsMinX = contentMinX - (PLUS_BUTTON_RADIUS * 2 + 8);
-      const boundsMaxX = contentMaxX + (PLUS_BUTTON_RADIUS * 2 + 8);
+      // Include the trailing "+"/chevron buttons so nothing is clipped after fitting.
+      const boundsMinX = contentMinX - (PLUS_BUTTON_RADIUS * 4 + 12);
+      const boundsMaxX = contentMaxX + (PLUS_BUTTON_RADIUS * 4 + 12);
       const boundsWidth = Math.max(1, boundsMaxX - boundsMinX);
       const boundsHeight = Math.max(1, contentMaxY - contentMinY);
 
@@ -562,8 +561,8 @@ export const MindMapCanvas = forwardRef<MindMapCanvasHandle, MindMapCanvasProps>
         if (!childPos) continue;
 
         const startX = isRTLLayout
-          ? parentPos.x - PLUS_BUTTON_RADIUS * 2 - 4
-          : parentPos.x + parentPos.width + PLUS_BUTTON_RADIUS * 2 + 4;
+          ? parentPos.x - PLUS_BUTTON_RADIUS * 4 - 12
+          : parentPos.x + parentPos.width + PLUS_BUTTON_RADIUS * 4 + 12;
         const startY = parentPos.y + parentPos.height / 2;
         const endX = isRTLLayout ? childPos.x + childPos.width : childPos.x;
         const endY = childPos.y + childPos.height / 2;
@@ -873,10 +872,10 @@ export const MindMapCanvas = forwardRef<MindMapCanvasHandle, MindMapCanvasProps>
       }
 
       if (!isBeingDragged && !readOnly) {
-        const plusX = isRTLLayout
-          ? pos.x - PLUS_BUTTON_RADIUS - 4
-          : pos.x + pos.width + PLUS_BUTTON_RADIUS + 4;
+        const dir = isRTLLayout ? -1 : 1;
+        const edgeX = isRTLLayout ? pos.x : pos.x + pos.width;
         const plusY = pos.y + pos.height / 2;
+        const plusX = edgeX + dir * (PLUS_BUTTON_RADIUS * 3 + 8);
 
         elements.push(
           <g
@@ -911,32 +910,26 @@ export const MindMapCanvas = forwardRef<MindMapCanvasHandle, MindMapCanvasProps>
             }}
           >
             <circle cx={plusX} cy={plusY} r={PLUS_BUTTON_RADIUS} fill="white" stroke={color} strokeWidth={1.5} opacity={0.85} />
-            <line x1={plusX - 5} y1={plusY} x2={plusX + 5} y2={plusY} stroke={color} strokeWidth={2} strokeLinecap="round" />
-            <line x1={plusX} y1={plusY - 5} x2={plusX} y2={plusY + 5} stroke={color} strokeWidth={2} strokeLinecap="round" />
+            <line x1={plusX - 3.5} y1={plusY} x2={plusX + 3.5} y2={plusY} stroke={color} strokeWidth={1.8} strokeLinecap="round" />
+            <line x1={plusX} y1={plusY - 3.5} x2={plusX} y2={plusY + 3.5} stroke={color} strokeWidth={1.8} strokeLinecap="round" />
           </g>
         );
       }
 
       if (!isBeingDragged && !readOnly && node.children.length > 0) {
-        // Placed right above the "+" button on the same (trailing) side.
-        const collapseX = isRTLLayout
-          ? pos.x - PLUS_BUTTON_RADIUS - 4
-          : pos.x + pos.width + PLUS_BUTTON_RADIUS + 4;
-        const collapseY = pos.y + pos.height / 2 - (PLUS_BUTTON_RADIUS * 2 + 6);
+        // Placed in front of (closer to the node than) the "+" button.
+        const dir = isRTLLayout ? -1 : 1;
+        const edgeX = isRTLLayout ? pos.x : pos.x + pos.width;
+        const collapseX = edgeX + dir * (PLUS_BUTTON_RADIUS + 4);
+        const collapseY = pos.y + pos.height / 2;
 
-        const chevY1 = collapseY - 4;
-        const chevY2 = collapseY + 4;
-        const chevGap = 2.5;
-        const chevWidth = 2.5;
+        // Single chevron. Expanded: points toward the children. Collapsed:
+        // points back toward the node and the circle is filled.
+        const pointsRight = node.collapsed ? isRTLLayout : !isRTLLayout;
         const chevColor = node.collapsed ? "#FFFFFF" : color;
-
-        // Double chevron: inward (><) when expanded, outward (<>) when collapsed.
-        const leftD = node.collapsed
-          ? `M ${collapseX - chevGap + chevWidth} ${chevY1} L ${collapseX - chevGap - chevWidth} ${collapseY} L ${collapseX - chevGap + chevWidth} ${chevY2}`
-          : `M ${collapseX - chevGap - chevWidth} ${chevY1} L ${collapseX - chevGap + chevWidth} ${collapseY} L ${collapseX - chevGap - chevWidth} ${chevY2}`;
-        const rightD = node.collapsed
-          ? `M ${collapseX + chevGap - chevWidth} ${chevY1} L ${collapseX + chevGap + chevWidth} ${collapseY} L ${collapseX + chevGap - chevWidth} ${chevY2}`
-          : `M ${collapseX + chevGap + chevWidth} ${chevY1} L ${collapseX + chevGap - chevWidth} ${collapseY} L ${collapseX + chevGap + chevWidth} ${chevY2}`;
+        const chevD = pointsRight
+          ? `M ${collapseX - 3} ${collapseY - 3.5} L ${collapseX + 3} ${collapseY} L ${collapseX - 3} ${collapseY + 3.5}`
+          : `M ${collapseX + 3} ${collapseY - 3.5} L ${collapseX - 3} ${collapseY} L ${collapseX + 3} ${collapseY + 3.5}`;
 
         elements.push(
           <g
@@ -961,34 +954,7 @@ export const MindMapCanvas = forwardRef<MindMapCanvasHandle, MindMapCanvasProps>
               strokeWidth={1.5}
               opacity={0.9}
             />
-            <path d={leftD} fill="none" stroke={chevColor} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" />
-            <path d={rightD} fill="none" stroke={chevColor} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" />
-          </g>
-        );
-      }
-
-      if (node.collapsed) {
-        const hiddenCount = countDescendants(node);
-        const badgeText = String(hiddenCount);
-        const badgeWidth = Math.max(20, badgeText.length * 8 + 12);
-        const badgeX = pos.x + pos.width / 2 - badgeWidth / 2;
-        const badgeY = pos.y + pos.height + 6;
-
-        elements.push(
-          <g key={`collapsed-count-${node.id}`} pointerEvents="none">
-            <rect x={badgeX} y={badgeY} width={badgeWidth} height={18} rx={9} fill={color} opacity={0.9} />
-            <text
-              x={badgeX + badgeWidth / 2}
-              y={badgeY + 9}
-              textAnchor="middle"
-              dominantBaseline="central"
-              fill="white"
-              fontSize={11}
-              fontWeight={700}
-              style={{ userSelect: "none" }}
-            >
-              {badgeText}
-            </text>
+            <path d={chevD} fill="none" stroke={chevColor} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" />
           </g>
         );
       }
