@@ -755,6 +755,7 @@ export const MindMapCanvas = forwardRef<MindMapCanvasHandle, MindMapCanvasProps>
                 if (longPressTimer.current) clearTimeout(longPressTimer.current);
                 longPressTimer.current = setTimeout(() => {
                   longPressTriggered.current = true;
+                  onSelectNode(node.id);
                   startNodeDrag(node.id, pos, startX, startY);
                 }, 500);
               }
