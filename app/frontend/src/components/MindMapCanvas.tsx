@@ -66,7 +66,7 @@ const NODE_PADDING_Y = 5;
 const MAX_CHARS_PER_LINE = 22;
 const HORIZONTAL_GAP = 60;
 const VERTICAL_GAP = 14;
-const PLUS_BUTTON_RADIUS = 8;
+const PLUS_BUTTON_RADIUS = 6;
 const ICON_SIZE = 11;
 const ICON_PAD = 3;
 const EDGE_MARGIN = 40;
@@ -874,89 +874,89 @@ export const MindMapCanvas = forwardRef<MindMapCanvasHandle, MindMapCanvasProps>
       if (!isBeingDragged && !readOnly) {
         const dir = isRTLLayout ? -1 : 1;
         const edgeX = isRTLLayout ? pos.x : pos.x + pos.width;
-        const plusY = pos.y + pos.height / 2;
+        const buttonY = pos.y + pos.height / 2;
         const plusX = edgeX + dir * (PLUS_BUTTON_RADIUS * 3 + 8);
+        const chevronX = edgeX + dir * (PLUS_BUTTON_RADIUS + 4);
 
-        elements.push(
-          <g
-            key={`plus-${node.id}`}
-            className="cursor-pointer"
-            onTouchStart={(e) => {
-              // Prevent focus loss (blur) on the editing textarea so text isn't lost
-              e.preventDefault();
-              e.stopPropagation();
-            }}
-            onClick={(e) => {
-              e.stopPropagation();
-              // If currently editing any node, commit the text first
-              if (editingNodeId) {
-                const commitText = editText.trim();
-                // Use editText if non-empty; for same node use node.text as fallback
-                const fallback = editingNodeId === node.id ? node.text : commitText || node.text;
-                onFinishEdit(editingNodeId, commitText || fallback);
-              }
-              onAddChild(node.id);
-            }}
-            onTouchEnd={(e) => {
-              e.stopPropagation();
-              e.preventDefault();
-              // Commit any ongoing edit before adding child
-              if (editingNodeId) {
-                const commitText = editText.trim();
-                const fallback = editingNodeId === node.id ? node.text : commitText || node.text;
-                onFinishEdit(editingNodeId, commitText || fallback);
-              }
-              onAddChild(node.id);
-            }}
-          >
-            <circle cx={plusX} cy={plusY} r={PLUS_BUTTON_RADIUS} fill="white" stroke={color} strokeWidth={1.5} opacity={0.85} />
-            <line x1={plusX - 3.5} y1={plusY} x2={plusX + 3.5} y2={plusY} stroke={color} strokeWidth={1.8} strokeLinecap="round" />
-            <line x1={plusX} y1={plusY - 3.5} x2={plusX} y2={plusY + 3.5} stroke={color} strokeWidth={1.8} strokeLinecap="round" />
-          </g>
-        );
-      }
+        const hasChildren = node.children.length > 0;
+        const isCollapsed = hasChildren && node.collapsed;
 
-      if (!isBeingDragged && !readOnly && node.children.length > 0) {
-        // Placed in front of (closer to the node than) the "+" button.
-        const dir = isRTLLayout ? -1 : 1;
-        const edgeX = isRTLLayout ? pos.x : pos.x + pos.width;
-        const collapseX = edgeX + dir * (PLUS_BUTTON_RADIUS + 4);
-        const collapseY = pos.y + pos.height / 2;
+        // "+" button: shown and active only while the subtree is expanded.
+        if (!isCollapsed) {
+          elements.push(
+            <g
+              key={`plus-${node.id}`}
+              className="cursor-pointer"
+              onTouchStart={(e) => {
+                // Prevent focus loss (blur) on the editing textarea so text isn't lost
+                e.preventDefault();
+                e.stopPropagation();
+              }}
+              onClick={(e) => {
+                e.stopPropagation();
+                // If currently editing any node, commit the text first
+                if (editingNodeId) {
+                  const commitText = editText.trim();
+                  // Use editText if non-empty; for same node use node.text as fallback
+                  const fallback = editingNodeId === node.id ? node.text : commitText || node.text;
+                  onFinishEdit(editingNodeId, commitText || fallback);
+                }
+                onAddChild(node.id);
+              }}
+              onTouchEnd={(e) => {
+                e.stopPropagation();
+                e.preventDefault();
+                // Commit any ongoing edit before adding child
+                if (editingNodeId) {
+                  const commitText = editText.trim();
+                  const fallback = editingNodeId === node.id ? node.text : commitText || node.text;
+                  onFinishEdit(editingNodeId, commitText || fallback);
+                }
+                onAddChild(node.id);
+              }}
+            >
+              <circle cx={plusX} cy={buttonY} r={PLUS_BUTTON_RADIUS} fill="white" stroke={color} strokeWidth={1.5} opacity={0.85} />
+              <line x1={plusX - 2.5} y1={buttonY} x2={plusX + 2.5} y2={buttonY} stroke={color} strokeWidth={1.6} strokeLinecap="round" />
+              <line x1={plusX} y1={buttonY - 2.5} x2={plusX} y2={buttonY + 2.5} stroke={color} strokeWidth={1.6} strokeLinecap="round" />
+            </g>
+          );
+        }
 
-        // Single chevron. Expanded: points toward the children. Collapsed:
-        // points back toward the node and the circle is filled.
-        const pointsRight = node.collapsed ? isRTLLayout : !isRTLLayout;
-        const chevColor = node.collapsed ? "#FFFFFF" : color;
-        const chevD = pointsRight
-          ? `M ${collapseX - 3} ${collapseY - 3.5} L ${collapseX + 3} ${collapseY} L ${collapseX - 3} ${collapseY + 3.5}`
-          : `M ${collapseX + 3} ${collapseY - 3.5} L ${collapseX - 3} ${collapseY} L ${collapseX + 3} ${collapseY + 3.5}`;
+        // Chevron button: always visible, but inactive for leaf nodes.
+        {
+          const pointsRight = isCollapsed ? isRTLLayout : !isRTLLayout;
+          const chevColor = isCollapsed ? "#FFFFFF" : color;
+          const chevD = pointsRight
+            ? `M ${chevronX - 2.5} ${buttonY - 3} L ${chevronX + 2.5} ${buttonY} L ${chevronX - 2.5} ${buttonY + 3}`
+            : `M ${chevronX + 2.5} ${buttonY - 3} L ${chevronX - 2.5} ${buttonY} L ${chevronX + 2.5} ${buttonY + 3}`;
 
-        elements.push(
-          <g
-            key={`collapse-${node.id}`}
-            className="cursor-pointer"
-            onMouseDown={(e) => e.stopPropagation()}
-            onTouchStart={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-            }}
-            onClick={(e) => {
-              e.stopPropagation();
-              onToggleCollapse(node.id);
-            }}
-          >
-            <circle
-              cx={collapseX}
-              cy={collapseY}
-              r={PLUS_BUTTON_RADIUS}
-              fill={node.collapsed ? color : "white"}
-              stroke={color}
-              strokeWidth={1.5}
-              opacity={0.9}
-            />
-            <path d={chevD} fill="none" stroke={chevColor} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" />
-          </g>
-        );
+          elements.push(
+            <g
+              key={`collapse-${node.id}`}
+              className={hasChildren ? "cursor-pointer" : "cursor-default"}
+              onMouseDown={(e) => e.stopPropagation()}
+              onTouchStart={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+              }}
+              onClick={(e) => {
+                e.stopPropagation();
+                if (hasChildren) onToggleCollapse(node.id);
+              }}
+            >
+              <circle
+                cx={chevronX}
+                cy={buttonY}
+                r={PLUS_BUTTON_RADIUS}
+                fill={isCollapsed ? color : "white"}
+                stroke={color}
+                strokeWidth={1.5}
+                opacity={0.9}
+              />
+              <path d={chevD} fill="none" stroke={chevColor} strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round" />
+            </g>
+          );
+        }
       }
 
       if (!node.collapsed) {
