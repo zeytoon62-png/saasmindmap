@@ -372,6 +372,120 @@ async def get_reports(
     )
 
 
+def _format_duration(seconds: int) -> str:
+    """Human-readable duration like 2h 5m / 3m 12s / 40s."""
+    seconds = int(seconds or 0)
+    if seconds <= 0:
+        return "0s"
+    hours, rem = divmod(seconds, 3600)
+    minutes, secs = divmod(rem, 60)
+    if hours:
+        return f"{hours}h {minutes}m"
+    if minutes:
+        return f"{minutes}m {secs}s"
+    return f"{secs}s"
+
+
+@router.get("/ip-report")
+async def get_ip_report(db: AsyncSession = Depends(get_db)):
+    """Aggregate visitor usage per IP address."""
+    stmt = (
+        select(
+            Visitor_logs.ip_address,
+            func.max(Visitor_logs.location).label("location"),
+            func.min(Visitor_logs.created_at).label("first_seen"),
+            func.max(Visitor_logs.created_at).label("last_seen"),
+            func.coalesce(func.sum(Visitor_logs.duration_seconds), 0).label("total_duration"),
+            func.count(Visitor_logs.id).label("visit_count"),
+        )
+        .group_by(Visitor_logs.ip_address)
+        .order_by(func.max(Visitor_logs.created_at).desc())
+    )
+    result = await db.execute(stmt)
+    rows = result.all()
+    items = [
+        {
+            "ip": r.ip_address,
+            "location": r.location or "",
+            "first_seen": str(r.first_seen) if r.first_seen else "",
+            "last_seen": str(r.last_seen) if r.last_seen else "",
+            "total_duration_seconds": int(r.total_duration or 0),
+            "duration_human": _format_duration(int(r.total_duration or 0)),
+            "visit_count": int(r.visit_count or 0),
+        }
+        for r in rows
+    ]
+    return {"items": items, "total": len(items)}
+
+
+@router.get("/ip-report/export")
+async def export_ip_report(db: AsyncSession = Depends(get_db)):
+    """Export the per-IP usage report as an Excel (.xlsx) file."""
+    import io
+    from openpyxl import Workbook
+    from openpyxl.styles import Font
+    from fastapi.responses import StreamingResponse
+
+    stmt = (
+        select(
+            Visitor_logs.ip_address,
+            func.max(Visitor_logs.location).label("location"),
+            func.min(Visitor_logs.created_at).label("first_seen"),
+            func.max(Visitor_logs.created_at).label("last_seen"),
+            func.coalesce(func.sum(Visitor_logs.duration_seconds), 0).label("total_duration"),
+            func.count(Visitor_logs.id).label("visit_count"),
+        )
+        .group_by(Visitor_logs.ip_address)
+        .order_by(func.max(Visitor_logs.created_at).desc())
+    )
+    result = await db.execute(stmt)
+    rows = result.all()
+
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "IP Usage"
+    headers = [
+        "IP Address",
+        "Location",
+        "First Seen",
+        "Last Seen",
+        "Duration",
+        "Duration (seconds)",
+        "Visits",
+    ]
+    ws.append(headers)
+    for cell in ws[1]:
+        cell.font = Font(bold=True)
+
+    for r in rows:
+        ws.append(
+            [
+                r.ip_address,
+                r.location or "",
+                str(r.first_seen) if r.first_seen else "",
+                str(r.last_seen) if r.last_seen else "",
+                _format_duration(int(r.total_duration or 0)),
+                int(r.total_duration or 0),
+                int(r.visit_count or 0),
+            ]
+        )
+
+    # Roughly auto-size columns.
+    for column in ws.columns:
+        max_len = max(len(str(cell.value or "")) for cell in column)
+        ws.column_dimensions[column[0].column_letter].width = min(max(max_len + 2, 10), 40)
+
+    buf = io.BytesIO()
+    wb.save(buf)
+    buf.seek(0)
+
+    return StreamingResponse(
+        buf,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": "attachment; filename=ip_usage_report.xlsx"},
+    )
+
+
 # ========== Feedback Management ==========
 
 @router.get("/feedbacks")

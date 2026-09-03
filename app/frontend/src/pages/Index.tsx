@@ -96,6 +96,7 @@ export default function Index() {
     updateNodeFormat,
     updateNodeComment,
     updateNodeHyperlink,
+    toggleCollapse,
     reparentNode,
     moveNodeUp,
     moveNodeDown,
@@ -116,6 +117,8 @@ export default function Index() {
   const [sidebarOpen, setSidebarOpen] = useState(() => readStoredSidebar());
   const canvasHandle = useRef<MindMapCanvasHandle>(null);
   const visitLogged = useRef(false);
+  const sessionRef = useRef<{ id: string; start: number }>({ id: "", start: Date.now() });
+  const leftRef = useRef(false);
 
   const selectedNode = selectedNodeId ? findNode(data.root, selectedNodeId) : null;
 
@@ -193,15 +196,20 @@ export default function Index() {
     return () => window.removeEventListener("beforeunload", handleBeforeUnload);
   }, [hasUnsavedChanges, t.unsavedWarning]);
 
-  // Log the visit once per session for the weekly report.
+  // Log the visit once per session for the weekly report and IP usage tracking.
   useEffect(() => {
     if (visitLogged.current) return;
     visitLogged.current = true;
+
+    const sessionId = crypto.randomUUID();
+    sessionRef.current = { id: sessionId, start: Date.now() };
+
     client.apiCall
       .invoke({
         url: "/api/v1/reports/visitor-log",
         method: "POST",
         data: {
+          session_id: sessionId,
           page_visited: window.location.pathname,
           device_type: detectDeviceType(),
           browser: detectBrowser(),
@@ -220,6 +228,37 @@ export default function Index() {
         // Scheduling must never block the editor.
       });
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Record how long the visitor stayed once they leave / hide the tab.
+  useEffect(() => {
+    const sendLeave = () => {
+      if (leftRef.current) return;
+      const { id, start } = sessionRef.current;
+      if (!id) return;
+      leftRef.current = true;
+      const durationSeconds = Math.max(0, Math.round((Date.now() - start) / 1000));
+      const body = JSON.stringify({ session_id: id, duration_seconds: durationSeconds });
+      if (typeof navigator.sendBeacon === "function") {
+        navigator.sendBeacon("/api/v1/reports/visitor-leave", new Blob([body], { type: "application/json" }));
+      } else {
+        fetch("/api/v1/reports/visitor-leave", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body,
+          keepalive: true,
+        }).catch(() => {});
+      }
+    };
+    window.addEventListener("pagehide", sendLeave);
+    window.addEventListener("beforeunload", sendLeave);
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState === "hidden") sendLeave();
+    });
+    return () => {
+      window.removeEventListener("pagehide", sendLeave);
+      window.removeEventListener("beforeunload", sendLeave);
+    };
   }, []);
 
   useEffect(() => {
@@ -398,6 +437,7 @@ export default function Index() {
               onFinishEdit={handleFinishEdit}
               onAddChild={addChild}
               onReparentNode={reparentNode}
+              onToggleCollapse={toggleCollapse}
             />
           </div>
         </div>

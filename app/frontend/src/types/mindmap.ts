@@ -15,6 +15,8 @@ export interface MindMapNode {
   listStyle?: NodeListStyle;
   bold?: boolean;
   fontSize?: number;
+  /** When true, the node's subtree is hidden (collapsed). */
+  collapsed?: boolean;
 }
 
 /** Partial formatting update applied to a single node. */
@@ -63,6 +65,15 @@ export function resolveNodeColor(node: MindMapNode, depth: number): string {
   if (node.color) return node.color;
   const safeDepth = depth < 0 ? 0 : depth;
   return DEFAULT_NODE_COLORS[safeDepth % DEFAULT_NODE_COLORS.length];
+}
+
+/** Total number of descendant nodes (all levels below this node). */
+export function countDescendants(node: MindMapNode): number {
+  let count = 0;
+  for (const child of node.children) {
+    count += 1 + countDescendants(child);
+  }
+  return count;
 }
 
 export function resolveFontSize(node: MindMapNode, isRoot: boolean): number {

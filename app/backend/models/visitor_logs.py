@@ -15,5 +15,8 @@ class Visitor_logs(Base):
     os = Column(String, nullable=True)
     page_visited = Column(String, nullable=True)
     actions_summary = Column(String, nullable=True)
+    session_id = Column(String(64), nullable=True)
+    duration_seconds = Column(Integer, nullable=True)
+    location = Column(String(255), nullable=True)
     created_at = Column(DateTime(timezone=True), default=datetime.now)
     updated_at = Column(DateTime(timezone=True), default=datetime.now, onupdate=datetime.now)

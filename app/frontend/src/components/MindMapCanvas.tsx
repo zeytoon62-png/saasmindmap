@@ -7,6 +7,7 @@ import {
   getNodeDepth,
   resolveNodeColor,
   resolveFontSize,
+  countDescendants,
 } from "@/types/mindmap";
 import { EXPORT_WEBSITE } from "@/lib/mindmapExport";
 import { Maximize2, Minus, Plus, Crosshair } from "lucide-react";
@@ -42,6 +43,7 @@ interface MindMapCanvasProps {
   onFinishEdit: (id: string, text: string) => void;
   onAddChild: (parentId: string) => void;
   onReparentNode: (nodeId: string, newParentId: string) => void;
+  onToggleCollapse: (nodeId: string) => void;
   readOnly?: boolean;
 }
 
@@ -66,6 +68,7 @@ const MAX_CHARS_PER_LINE = 22;
 const HORIZONTAL_GAP = 60;
 const VERTICAL_GAP = 14;
 const PLUS_BUTTON_RADIUS = 11;
+const COLLAPSE_BUTTON_RADIUS = 9;
 const ICON_SIZE = 11;
 const ICON_PAD = 3;
 const EDGE_MARGIN = 40;
@@ -191,7 +194,7 @@ function calculateLayout(
   const defaultDirection: NodeDirection = isRTL ? "rtl" : "ltr";
   const measured = measureNode(node, textOf(node), depth === 0, defaultDirection);
 
-  if (node.children.length === 0) {
+  if (node.children.length === 0 || node.collapsed) {
     positions.push({ id: node.id, x, y, ...measured });
     return { totalHeight: measured.height };
   }
@@ -224,7 +227,7 @@ function normalizeUrl(url: string): string {
 }
 
 export const MindMapCanvas = forwardRef<MindMapCanvasHandle, MindMapCanvasProps>(
-  ({ root, selectedNodeId, editingNodeId, isRTL: isRTLLayout, labels, onSelectNode, onStartEdit, onFinishEdit, onAddChild, onReparentNode, readOnly = false }, ref) => {
+  ({ root, selectedNodeId, editingNodeId, isRTL: isRTLLayout, labels, onSelectNode, onStartEdit, onFinishEdit, onAddChild, onReparentNode, onToggleCollapse, readOnly = false }, ref) => {
     const [zoom, setZoom] = useState(1);
     const [pan, setPan] = useState({ x: EDGE_MARGIN, y: EDGE_MARGIN });
     const [isPanning, setIsPanning] = useState(false);
@@ -915,8 +918,65 @@ export const MindMapCanvas = forwardRef<MindMapCanvasHandle, MindMapCanvasProps>
         );
       }
 
-      for (const child of node.children) {
-        elements.push(...renderNodes(child));
+      if (!isBeingDragged && !readOnly && node.children.length > 0) {
+        const collapseX = isRTLLayout
+          ? pos.x + pos.width + COLLAPSE_BUTTON_RADIUS + 4
+          : pos.x - COLLAPSE_BUTTON_RADIUS - 4;
+        const collapseY = pos.y + pos.height / 2;
+
+        elements.push(
+          <g
+            key={`collapse-${node.id}`}
+            className="cursor-pointer"
+            onMouseDown={(e) => e.stopPropagation()}
+            onTouchStart={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+            }}
+            onClick={(e) => {
+              e.stopPropagation();
+              onToggleCollapse(node.id);
+            }}
+          >
+            <circle cx={collapseX} cy={collapseY} r={COLLAPSE_BUTTON_RADIUS} fill="white" stroke={color} strokeWidth={1.5} opacity={0.9} />
+            <line x1={collapseX - 4} y1={collapseY} x2={collapseX + 4} y2={collapseY} stroke={color} strokeWidth={2} strokeLinecap="round" />
+            {node.collapsed && (
+              <line x1={collapseX} y1={collapseY - 4} x2={collapseX} y2={collapseY + 4} stroke={color} strokeWidth={2} strokeLinecap="round" />
+            )}
+          </g>
+        );
+      }
+
+      if (node.collapsed) {
+        const hiddenCount = countDescendants(node);
+        const badgeText = String(hiddenCount);
+        const badgeWidth = Math.max(20, badgeText.length * 8 + 12);
+        const badgeX = pos.x + pos.width / 2 - badgeWidth / 2;
+        const badgeY = pos.y + pos.height + 6;
+
+        elements.push(
+          <g key={`collapsed-count-${node.id}`} pointerEvents="none">
+            <rect x={badgeX} y={badgeY} width={badgeWidth} height={18} rx={9} fill={color} opacity={0.9} />
+            <text
+              x={badgeX + badgeWidth / 2}
+              y={badgeY + 9}
+              textAnchor="middle"
+              dominantBaseline="central"
+              fill="white"
+              fontSize={11}
+              fontWeight={700}
+              style={{ userSelect: "none" }}
+            >
+              {badgeText}
+            </text>
+          </g>
+        );
+      }
+
+      if (!node.collapsed) {
+        for (const child of node.children) {
+          elements.push(...renderNodes(child));
+        }
       }
       return elements;
     };

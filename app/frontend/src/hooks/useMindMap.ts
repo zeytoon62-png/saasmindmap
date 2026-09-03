@@ -229,6 +229,18 @@ export function useMindMap(newNodeText = "New Node", defaultMainIdea = "Main Ide
     });
   }, [updateTreeWithHistory, deepClone, findNode]);
 
+  /** Toggle whether a node's subtree is collapsed (hidden). */
+  const toggleCollapse = useCallback((nodeId: string) => {
+    updateTreeWithHistory((root) => {
+      const newRoot = deepClone(root);
+      const node = findNode(newRoot, nodeId);
+      if (node) {
+        node.collapsed = !node.collapsed;
+      }
+      return newRoot;
+    });
+  }, [updateTreeWithHistory, deepClone, findNode]);
+
   const reparentNode = useCallback((nodeId: string, newParentId: string) => {
     if (nodeId === data.root.id) return;
     updateTreeWithHistory((root) => {
@@ -325,6 +337,7 @@ export function useMindMap(newNodeText = "New Node", defaultMainIdea = "Main Ide
     updateNodeFormat,
     updateNodeComment,
     updateNodeHyperlink,
+    toggleCollapse,
     reparentNode,
     moveNodeUp,
     moveNodeDown,

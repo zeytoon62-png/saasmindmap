@@ -51,7 +51,17 @@ interface EmailLogItem {
   sent_at: string;
 }
 
-type Tab = "dashboard" | "admins" | "settings" | "wallets" | "feedbacks";
+interface IpReportItem {
+  ip: string;
+  location: string;
+  first_seen: string;
+  last_seen: string;
+  total_duration_seconds: number;
+  duration_human: string;
+  visit_count: number;
+}
+
+type Tab = "dashboard" | "admins" | "settings" | "wallets" | "feedbacks" | "ipreport";
 
 const SUPPORTED_LANGUAGES = [
   { code: "en", label: "English" },
@@ -101,6 +111,9 @@ export default function Manager() {
   // Feedbacks
   const [feedbacks, setFeedbacks] = useState<FeedbackItem[]>([]);
   const [fbFilter, setFbFilter] = useState<"" | "normal" | "urgent">("");
+
+  // IP report
+  const [ipReport, setIpReport] = useState<IpReportItem[]>([]);
 
   // Batch send status
   const [batchSending, setBatchSending] = useState(false);
@@ -183,6 +196,13 @@ export default function Manager() {
     } catch { /* ignore */ }
   };
 
+  const loadIpReport = async () => {
+    try {
+      const res = await client.apiCall.invoke({ url: "/api/v1/admin/ip-report", method: "GET", data: {} });
+      setIpReport((res as any)?.data?.items || []);
+    } catch { /* ignore */ }
+  };
+
   useEffect(() => {
     if (!loggedIn) return;
     if (activeTab === "dashboard") { loadReports(); loadEmailLogs(); }
@@ -190,6 +210,7 @@ export default function Manager() {
     else if (activeTab === "settings") loadSettings();
     else if (activeTab === "wallets") loadWallets();
     else if (activeTab === "feedbacks") loadFeedbacks();
+    else if (activeTab === "ipreport") loadIpReport();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loggedIn, activeTab]);
 
@@ -360,6 +381,7 @@ export default function Manager() {
     { key: "settings", label: "⚙️ Settings" },
     { key: "wallets", label: "💰 Wallets" },
     { key: "feedbacks", label: "💬 Feedbacks" },
+    { key: "ipreport", label: "🌍 IP Report" },
   ];
 
   // Settings field definitions - SMTP + emails + schedule + telegram + multilingual about us
@@ -787,6 +809,55 @@ export default function Manager() {
                 </div>
               ))}
             </div>
+          </div>
+        )}
+
+        {/* IP Report Tab */}
+        {activeTab === "ipreport" && (
+          <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold">🌍 IP Usage Report</h2>
+              <div className="flex gap-2 items-center">
+                <button onClick={loadIpReport} className="text-xs text-blue-600 hover:underline cursor-pointer">Refresh</button>
+                <a
+                  href="/api/v1/admin/ip-report/export"
+                  download="ip_usage_report.xlsx"
+                  className="text-xs bg-green-600 text-white px-3 py-1.5 rounded-lg font-medium hover:bg-green-700 cursor-pointer"
+                >
+                  ⬇ Export Excel
+                </a>
+              </div>
+            </div>
+            {ipReport.length === 0 ? (
+              <p className="text-sm text-slate-500">No visitor data found.</p>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-slate-200 text-left">
+                      <th className="py-2 px-2 text-xs font-semibold text-slate-500">IP Address</th>
+                      <th className="py-2 px-2 text-xs font-semibold text-slate-500">Location</th>
+                      <th className="py-2 px-2 text-xs font-semibold text-slate-500">First Seen</th>
+                      <th className="py-2 px-2 text-xs font-semibold text-slate-500">Last Seen</th>
+                      <th className="py-2 px-2 text-xs font-semibold text-slate-500">Duration</th>
+                      <th className="py-2 px-2 text-xs font-semibold text-slate-500">Visits</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {ipReport.map((item) => (
+                      <tr key={item.ip} className="border-b border-slate-100 hover:bg-slate-50">
+                        <td className="py-2 px-2 text-xs font-mono">{item.ip}</td>
+                        <td className="py-2 px-2 text-xs">{item.location || "—"}</td>
+                        <td className="py-2 px-2 text-xs text-slate-500">{item.first_seen}</td>
+                        <td className="py-2 px-2 text-xs text-slate-500">{item.last_seen}</td>
+                        <td className="py-2 px-2 text-xs">{item.duration_human}</td>
+                        <td className="py-2 px-2 text-xs">{item.visit_count}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
         )}
       </div>
