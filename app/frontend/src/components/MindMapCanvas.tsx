@@ -68,7 +68,6 @@ const MAX_CHARS_PER_LINE = 22;
 const HORIZONTAL_GAP = 60;
 const VERTICAL_GAP = 14;
 const PLUS_BUTTON_RADIUS = 11;
-const COLLAPSE_BUTTON_RADIUS = 9;
 const ICON_SIZE = 11;
 const ICON_PAD = 3;
 const EDGE_MARGIN = 40;
@@ -919,10 +918,25 @@ export const MindMapCanvas = forwardRef<MindMapCanvasHandle, MindMapCanvasProps>
       }
 
       if (!isBeingDragged && !readOnly && node.children.length > 0) {
+        // Placed right above the "+" button on the same (trailing) side.
         const collapseX = isRTLLayout
-          ? pos.x + pos.width + COLLAPSE_BUTTON_RADIUS + 4
-          : pos.x - COLLAPSE_BUTTON_RADIUS - 4;
-        const collapseY = pos.y + pos.height / 2;
+          ? pos.x - PLUS_BUTTON_RADIUS - 4
+          : pos.x + pos.width + PLUS_BUTTON_RADIUS + 4;
+        const collapseY = pos.y + pos.height / 2 - (PLUS_BUTTON_RADIUS * 2 + 6);
+
+        const chevY1 = collapseY - 4;
+        const chevY2 = collapseY + 4;
+        const chevGap = 2.5;
+        const chevWidth = 2.5;
+        const chevColor = node.collapsed ? "#FFFFFF" : color;
+
+        // Double chevron: inward (><) when expanded, outward (<>) when collapsed.
+        const leftD = node.collapsed
+          ? `M ${collapseX - chevGap + chevWidth} ${chevY1} L ${collapseX - chevGap - chevWidth} ${collapseY} L ${collapseX - chevGap + chevWidth} ${chevY2}`
+          : `M ${collapseX - chevGap - chevWidth} ${chevY1} L ${collapseX - chevGap + chevWidth} ${collapseY} L ${collapseX - chevGap - chevWidth} ${chevY2}`;
+        const rightD = node.collapsed
+          ? `M ${collapseX + chevGap - chevWidth} ${chevY1} L ${collapseX + chevGap + chevWidth} ${collapseY} L ${collapseX + chevGap - chevWidth} ${chevY2}`
+          : `M ${collapseX + chevGap + chevWidth} ${chevY1} L ${collapseX + chevGap - chevWidth} ${collapseY} L ${collapseX + chevGap + chevWidth} ${chevY2}`;
 
         elements.push(
           <g
@@ -938,11 +952,17 @@ export const MindMapCanvas = forwardRef<MindMapCanvasHandle, MindMapCanvasProps>
               onToggleCollapse(node.id);
             }}
           >
-            <circle cx={collapseX} cy={collapseY} r={COLLAPSE_BUTTON_RADIUS} fill="white" stroke={color} strokeWidth={1.5} opacity={0.9} />
-            <line x1={collapseX - 4} y1={collapseY} x2={collapseX + 4} y2={collapseY} stroke={color} strokeWidth={2} strokeLinecap="round" />
-            {node.collapsed && (
-              <line x1={collapseX} y1={collapseY - 4} x2={collapseX} y2={collapseY + 4} stroke={color} strokeWidth={2} strokeLinecap="round" />
-            )}
+            <circle
+              cx={collapseX}
+              cy={collapseY}
+              r={PLUS_BUTTON_RADIUS}
+              fill={node.collapsed ? color : "white"}
+              stroke={color}
+              strokeWidth={1.5}
+              opacity={0.9}
+            />
+            <path d={leftD} fill="none" stroke={chevColor} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" />
+            <path d={rightD} fill="none" stroke={chevColor} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" />
           </g>
         );
       }
