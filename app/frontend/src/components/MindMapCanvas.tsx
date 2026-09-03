@@ -690,46 +690,11 @@ export const MindMapCanvas = forwardRef<MindMapCanvasHandle, MindMapCanvasProps>
       const { anchor, x: textX } = resolveTextAnchor(pos);
       const firstLineY = pos.y + pos.height / 2 - (pos.lines.length * pos.lineHeight) / 2 + pos.lineHeight / 2;
 
-      if (isBeingDragged) {
-        const measured = measureNode(node, node.text, isRoot, isRTLLayout ? "rtl" : "ltr");
-        elements.push(
-          <g key={`drag-${node.id}`} opacity={0.7}>
-            <rect
-              x={dragPos.x - measured.width / 2}
-              y={dragPos.y - measured.height / 2}
-              width={measured.width}
-              height={measured.height}
-              rx={6}
-              fill="white"
-              stroke={color}
-              strokeWidth={2}
-              strokeDasharray="4 2"
-            />
-            <text
-              textAnchor="middle"
-              dominantBaseline="central"
-              fill={color}
-              fontSize={measured.fontSize}
-              fontWeight={measured.bold ? 700 : 500}
-              style={{ pointerEvents: "none", userSelect: "none", direction: measured.direction }}
-            >
-              {measured.lines.map((line, index) => (
-                <tspan
-                  key={index}
-                  x={dragPos.x}
-                  y={dragPos.y - (measured.lines.length * measured.lineHeight) / 2 + measured.lineHeight / 2 + index * measured.lineHeight}
-                >
-                  {line}
-                </tspan>
-              ))}
-            </text>
-          </g>
-        );
-      } else {
-        elements.push(
-          <g
-            key={node.id}
-            className={readOnly ? "cursor-default" : "cursor-pointer"}
+      elements.push(
+        <g
+          key={node.id}
+          className={readOnly ? "cursor-default" : "cursor-pointer"}
+          opacity={isBeingDragged ? 0 : 1}
             onClick={(e) => {
               e.stopPropagation();
               if (!readOnly && !isDragActive.current) onSelectNode(node.id);
@@ -867,6 +832,42 @@ export const MindMapCanvas = forwardRef<MindMapCanvasHandle, MindMapCanvasProps>
             </foreignObject>
           );
         }
+
+      if (isBeingDragged) {
+        const measured = measureNode(node, node.text, isRoot, isRTLLayout ? "rtl" : "ltr");
+        elements.push(
+          <g key={`drag-${node.id}`} opacity={0.7}>
+            <rect
+              x={dragPos.x - measured.width / 2}
+              y={dragPos.y - measured.height / 2}
+              width={measured.width}
+              height={measured.height}
+              rx={6}
+              fill="white"
+              stroke={color}
+              strokeWidth={2}
+              strokeDasharray="4 2"
+            />
+            <text
+              textAnchor="middle"
+              dominantBaseline="central"
+              fill={color}
+              fontSize={measured.fontSize}
+              fontWeight={measured.bold ? 700 : 500}
+              style={{ pointerEvents: "none", userSelect: "none", direction: measured.direction }}
+            >
+              {measured.lines.map((line, index) => (
+                <tspan
+                  key={index}
+                  x={dragPos.x}
+                  y={dragPos.y - (measured.lines.length * measured.lineHeight) / 2 + measured.lineHeight / 2 + index * measured.lineHeight}
+                >
+                  {line}
+                </tspan>
+              ))}
+            </text>
+          </g>
+        );
       }
 
       if (!isBeingDragged && !readOnly) {
