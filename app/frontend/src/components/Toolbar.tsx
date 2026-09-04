@@ -580,22 +580,21 @@ export function Toolbar({
           <span className="hidden sm:inline ml-1.5">{t.save}</span>
         </Button>
 
-        {selectedNode && (
-          <>
-            <div className="w-px h-6 bg-slate-300 mx-0.5" />
+        <div className="w-px h-6 bg-slate-300 mx-0.5" />
 
             {/* Text formatting for the selected node's text */}
             <div className="relative">
               <Button
                 variant="outline"
                 size="sm"
+                disabled={!selectedNode}
                 onClick={() => {
                   setShowFormat(!showFormat);
                   setShowColors(false);
                   setShowCommentInput(false);
                   setShowLinkInput(false);
                 }}
-                className="h-9 w-9 sm:h-8 sm:w-auto sm:px-3 p-0 cursor-pointer hover:bg-emerald-50 active:bg-emerald-100 border-emerald-300 text-emerald-700"
+                className="h-9 w-9 sm:h-8 sm:w-auto sm:px-3 p-0 cursor-pointer hover:bg-emerald-50 active:bg-emerald-100 border-emerald-300 text-emerald-700 disabled:grayscale"
                 title={t.textFormat}
               >
                 <Type className="w-4 h-4" />
@@ -722,13 +721,14 @@ export function Toolbar({
               <Button
                 variant="outline"
                 size="sm"
+                disabled={!selectedNode}
                 onClick={() => {
                   setShowColors(!showColors);
                   setShowFormat(false);
                   setShowCommentInput(false);
                   setShowLinkInput(false);
                 }}
-                className="h-9 w-9 sm:h-8 sm:w-auto sm:px-3 p-0 cursor-pointer hover:bg-purple-50 active:bg-purple-100 border-purple-300 text-purple-600"
+                className="h-9 w-9 sm:h-8 sm:w-auto sm:px-3 p-0 cursor-pointer hover:bg-purple-50 active:bg-purple-100 border-purple-300 text-purple-600 disabled:grayscale"
                 title={t.colorTooltip}
               >
                 <Palette className="w-4 h-4" />
@@ -799,9 +799,10 @@ export function Toolbar({
               <Button
                 variant="outline"
                 size="sm"
+                disabled={!selectedNode}
                 onClick={handleOpenComment}
-                className={`h-9 w-9 sm:h-8 sm:w-auto sm:px-3 p-0 cursor-pointer hover:bg-yellow-50 active:bg-yellow-100 ${selectedNode.comment ? "border-yellow-400 text-yellow-700 bg-yellow-50" : "border-slate-200 text-slate-600"}`}
-                title={selectedNode.comment ? t.editComment : t.addComment}
+                className={`h-9 w-9 sm:h-8 sm:w-auto sm:px-3 p-0 cursor-pointer hover:bg-yellow-50 active:bg-yellow-100 disabled:grayscale ${selectedNode?.comment ? "border-yellow-400 text-yellow-700 bg-yellow-50" : "border-slate-200 text-slate-600"}`}
+                title={selectedNode?.comment ? t.editComment : t.addComment}
               >
                 <MessageSquare className="w-4 h-4" />
                 <span className="hidden sm:inline ml-1.5">{t.comment}</span>
@@ -833,9 +834,10 @@ export function Toolbar({
               <Button
                 variant="outline"
                 size="sm"
+                disabled={!selectedNode}
                 onClick={handleOpenLink}
-                className={`h-9 w-9 sm:h-8 sm:w-auto sm:px-3 p-0 cursor-pointer hover:bg-blue-50 active:bg-blue-100 ${selectedNode.hyperlink ? "border-blue-400 text-blue-700 bg-blue-50" : "border-slate-200 text-slate-600"}`}
-                title={selectedNode.hyperlink ? t.editHyperlink : t.addHyperlink}
+                className={`h-9 w-9 sm:h-8 sm:w-auto sm:px-3 p-0 cursor-pointer hover:bg-blue-50 active:bg-blue-100 disabled:grayscale ${selectedNode?.hyperlink ? "border-blue-400 text-blue-700 bg-blue-50" : "border-slate-200 text-slate-600"}`}
+                title={selectedNode?.hyperlink ? t.editHyperlink : t.addHyperlink}
               >
                 <Link2 className="w-4 h-4" />
                 <span className="hidden sm:inline ml-1.5">{t.hyperlink}</span>
@@ -864,41 +866,38 @@ export function Toolbar({
               )}
             </div>
 
-            {!isRoot && (
-              <>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => onMoveNodeUp(selectedNode.id)}
-                  className="h-9 w-9 sm:h-8 sm:w-8 p-0 cursor-pointer hover:bg-slate-100 active:bg-slate-200"
-                  title={t.moveUp}
-                >
-                  <ArrowUp className="w-4 h-4" />
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => onMoveNodeDown(selectedNode.id)}
-                  className="h-9 w-9 sm:h-8 sm:w-8 p-0 cursor-pointer hover:bg-slate-100 active:bg-slate-200"
-                  title={t.moveDown}
-                >
-                  <ArrowDown className="w-4 h-4" />
-                </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => onMoveNodeUp(selectedNode.id)}
+              disabled={!selectedNode || isRoot}
+              className="h-9 w-9 sm:h-8 sm:w-8 p-0 cursor-pointer hover:bg-slate-100 active:bg-slate-200 disabled:grayscale"
+              title={t.moveUp}
+            >
+              <ArrowUp className="w-4 h-4" />
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => onMoveNodeDown(selectedNode.id)}
+              disabled={!selectedNode || isRoot}
+              className="h-9 w-9 sm:h-8 sm:w-8 p-0 cursor-pointer hover:bg-slate-100 active:bg-slate-200 disabled:grayscale"
+              title={t.moveDown}
+            >
+              <ArrowDown className="w-4 h-4" />
+            </Button>
 
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => onDeleteNode(selectedNode.id)}
-                  className="h-9 w-9 sm:h-8 sm:w-auto sm:px-3 p-0 cursor-pointer hover:bg-red-50 active:bg-red-100 border-red-300 text-red-600"
-                  title={t.deleteTooltip}
-                >
-                  <Trash2 className="w-4 h-4" />
-                  <span className="hidden sm:inline ml-1.5">{t.delete}</span>
-                </Button>
-              </>
-            )}
-          </>
-        )}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => onDeleteNode(selectedNode.id)}
+              disabled={!selectedNode || isRoot}
+              className="h-9 w-9 sm:h-8 sm:w-auto sm:px-3 p-0 cursor-pointer hover:bg-red-50 active:bg-red-100 border-red-300 text-red-600 disabled:grayscale"
+              title={t.deleteTooltip}
+            >
+              <Trash2 className="w-4 h-4" />
+              <span className="hidden sm:inline ml-1.5">{t.delete}</span>
+            </Button>
 
         <div className="flex-1" />
 

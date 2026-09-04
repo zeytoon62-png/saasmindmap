@@ -1122,10 +1122,6 @@ export const MindMapCanvas = forwardRef<MindMapCanvasHandle, MindMapCanvasProps>
           </button>
         </div>
 
-        <div className={`absolute bottom-3 z-40 text-xs text-slate-400 bg-white/80 px-2 py-1 rounded ${isRTLLayout ? "left-3" : "right-3"}`}>
-          {Math.round(zoom * 100)}%
-        </div>
-
         <svg
           ref={svgRef}
           width="100%"
