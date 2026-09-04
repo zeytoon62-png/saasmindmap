@@ -333,23 +333,18 @@ export const MindMapCanvas = forwardRef<MindMapCanvasHandle, MindMapCanvasProps>
       };
     }, [refreshCulling]);
 
-    // Live text of the node being edited so the box resizes while typing.
-    const textOf = useCallback(
-      (node: MindMapNode) => (node.id === editingNodeId ? editText : node.text),
-      [editingNodeId, editText]
-    );
-
-    // Memoize layout calculation – prevents expensive recalculation during zoom/pan
+    // Memoize layout calculation. Layout is based on committed text only (not
+    // the live editText), so typing in a node does not recompute the whole tree.
     const { positions, contentMinX, contentMaxX, contentMinY, contentMaxY } = useMemo(() => {
       const pos: NodePosition[] = [];
-      calculateLayout(root, 0, 0, pos, isRTLLayout, textOf);
+      calculateLayout(root, 0, 0, pos, isRTLLayout, (n) => n.text);
       if (pos.length === 0) return { positions: pos, contentMinX: 0, contentMaxX: 0, contentMinY: 0, contentMaxY: 0 };
       const minX = Math.min(...pos.map((p) => p.x));
       const maxX = Math.max(...pos.map((p) => p.x + p.width));
       const minY = Math.min(...pos.map((p) => p.y));
       const maxY = Math.max(...pos.map((p) => p.y + p.height));
       return { positions: pos, contentMinX: minX, contentMaxX: maxX, contentMinY: minY, contentMaxY: maxY };
-    }, [root, isRTLLayout, textOf]);
+    }, [root, isRTLLayout]);
 
     /** Compute pan so that the root node is centered in viewport at zoom=1. */
     const computeInitialPan = useCallback(() => {
@@ -800,6 +795,14 @@ export const MindMapCanvas = forwardRef<MindMapCanvasHandle, MindMapCanvasProps>
       const isNearestTarget = nearestParentId === node.id && draggingNodeId !== null && isDragActive.current;
       const iconColor = isRoot ? "#FFFFFF" : color;
 
+      // While editing, measure with the live text so the box grows as the user
+      // types (layout positions remain based on committed text).
+      const liveMeasure = isEditing
+        ? measureNode(node, editText, isRoot, isRTLLayout ? "rtl" : "ltr")
+        : null;
+      const boxWidth = liveMeasure ? liveMeasure.width : pos.width;
+      const boxHeight = liveMeasure ? liveMeasure.height : pos.height;
+
       const { anchor, x: textX } = resolveTextAnchor(pos);
       const firstLineY = pos.y + pos.height / 2 - (pos.lines.length * pos.lineHeight) / 2 + pos.lineHeight / 2;
 
@@ -864,8 +867,8 @@ export const MindMapCanvas = forwardRef<MindMapCanvasHandle, MindMapCanvasProps>
             <rect
               x={pos.x}
               y={pos.y}
-              width={pos.width}
-              height={pos.height}
+              width={boxWidth}
+              height={boxHeight}
               rx={isRoot ? 10 : 6}
               fill={isRoot ? color : "white"}
               stroke={isNearestTarget ? "#10b981" : color}
@@ -898,8 +901,8 @@ export const MindMapCanvas = forwardRef<MindMapCanvasHandle, MindMapCanvasProps>
               key={`edit-${node.id}`}
               x={pos.x + 2}
               y={pos.y + 2}
-              width={pos.width - 4}
-              height={pos.height - 4}
+              width={boxWidth - 4}
+              height={boxHeight - 4}
             >
               <textarea
                 ref={editInputRef}
@@ -1255,7 +1258,7 @@ export const MindMapCanvas = forwardRef<MindMapCanvasHandle, MindMapCanvasProps>
             </filter>
           </defs>
           <rect data-bg="true" x="0" y="0" width="100%" height="100%" fill="transparent" />
-          <g ref={transformGroupRef} transform={`translate(${EDGE_MARGIN}, ${EDGE_MARGIN}) scale(1)`}>
+          <g ref={transformGroupRef} transform={`translate(${EDGE_MARGIN}, ${EDGE_MARGIN}) scale(1)`} style={{ willChange: "transform" }}>
             {renderConnections(root)}
             {renderDragConnection()}
             {renderNodes(root)}
