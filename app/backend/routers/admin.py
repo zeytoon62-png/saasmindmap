@@ -731,6 +731,7 @@ async def upload_file_standalone(
 
     directory = ensure_upload_dir(bucket_name)
     dest_path = os.path.join(directory, safe_key)
+    os.makedirs(os.path.dirname(dest_path), exist_ok=True)
 
     file_content = await file.read()
     with open(dest_path, "wb") as f:
