@@ -265,6 +265,13 @@ export default function Index() {
     if (lastCreatedNodeId) {
       setEditingNodeId(lastCreatedNodeId);
       setLastCreatedNodeId(null);
+      // On mobile, center the new node at 100% zoom so it is visible above the
+      // keyboard. Re-center after the keyboard opens (layout viewport shrinks).
+      if (window.innerWidth < 768) {
+        canvasHandle.current?.centerOnNode(lastCreatedNodeId);
+        const timer = setTimeout(() => canvasHandle.current?.centerOnNode(lastCreatedNodeId), 450);
+        return () => clearTimeout(timer);
+      }
     }
   }, [lastCreatedNodeId, setLastCreatedNodeId]);
 

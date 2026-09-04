@@ -55,6 +55,7 @@ export interface ImageExportResult {
 export interface MindMapCanvasHandle {
   exportToImage: (format?: "png" | "jpeg") => Promise<ImageExportResult | null>;
   exportToSvgString: () => string | null;
+  centerOnNode: (nodeId: string) => void;
 }
 
 const SVG_NS = "http://www.w3.org/2000/svg";
@@ -404,6 +405,24 @@ export const MindMapCanvas = forwardRef<MindMapCanvasHandle, MindMapCanvasProps>
     }, [contentMinX, contentMaxX, contentMinY, contentMaxY]);
 
     useImperativeHandle(ref, () => ({
+      centerOnNode: (nodeId: string) => {
+        const container = containerRef.current;
+        const pos = positions.find((p) => p.id === nodeId);
+        if (!container || !pos) return;
+        const viewWidth = container.clientWidth;
+        const viewHeight = container.clientHeight;
+        const nodeCenterX = pos.x + pos.width / 2;
+        const nodeCenterY = pos.y + pos.height / 2;
+        const nextZoom = 1;
+        const nextPan = {
+          x: viewWidth / 2 - nodeCenterX * nextZoom,
+          y: viewHeight / 2 - nodeCenterY * nextZoom,
+        };
+        zoomRef.current = nextZoom;
+        panRef.current = nextPan;
+        setZoom(nextZoom);
+        setPan(nextPan);
+      },
       exportToSvgString: () => {
         const built = buildExportSvg();
         if (!built) return null;

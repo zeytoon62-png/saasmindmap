@@ -716,33 +716,25 @@ async def upload_file_standalone(
 ):
     """
     Standalone file upload endpoint.
-    Receives a file via multipart form, uploads it to object storage,
-    and returns the object_key.
+    Saves the uploaded file to the local uploads directory and returns its key.
     """
-    import httpx
-    from services.storage import StorageService
-    from schemas.storage import FileUpDownRequest
+    import os
+
+    from services.local_storage import ensure_upload_dir, sanitize_key
 
     if not object_key:
         object_key = f"{bucket_name}/{file.filename}"
 
+    safe_key = sanitize_key(object_key)
+    if not safe_key:
+        raise HTTPException(status_code=400, detail="Invalid object key")
+
+    directory = ensure_upload_dir(bucket_name)
+    dest_path = os.path.join(directory, safe_key)
+
     file_content = await file.read()
-
-    storage = StorageService()
-    upload_req = FileUpDownRequest(bucket_name=bucket_name, object_key=object_key)
-    upload_resp = await storage.create_upload_url(upload_req)
-
-    if not upload_resp or not upload_resp.upload_url:
-        raise HTTPException(status_code=500, detail="Failed to get upload URL")
-
-    async with httpx.AsyncClient(timeout=30) as http_client:
-        resp = await http_client.put(
-            upload_resp.upload_url,
-            content=file_content,
-            headers={"Content-Type": file.content_type or "application/octet-stream"},
-        )
-        if resp.status_code >= 400:
-            raise HTTPException(status_code=500, detail="Upload to storage failed")
+    with open(dest_path, "wb") as f:
+        f.write(file_content)
 
     return {"success": True, "object_key": object_key}
 
@@ -751,16 +743,13 @@ async def upload_file_standalone(
 async def get_download_url_standalone(data: DownloadUrlRequest):
     """
     Standalone download URL endpoint.
-    Returns a presigned download URL for the given bucket/object_key.
+    Returns a local URL that serves the uploaded file.
     """
-    from services.storage import StorageService
-    from schemas.storage import FileUpDownRequest
+    from services.local_storage import sanitize_bucket, sanitize_key
 
-    storage = StorageService()
-    download_req = FileUpDownRequest(bucket_name=data.bucket_name, object_key=data.object_key)
-    download_resp = await storage.create_download_url(download_req)
+    safe_bucket = sanitize_bucket(data.bucket_name)
+    safe_key = sanitize_key(data.object_key)
+    if not safe_key:
+        raise HTTPException(status_code=400, detail="Invalid object key")
 
-    if not download_resp or not download_resp.download_url:
-        raise HTTPException(status_code=500, detail="Failed to get download URL")
-
-    return {"download_url": download_resp.download_url}
+    return {"download_url": f"/api/v1/uploads/{safe_bucket}/{safe_key}"}
