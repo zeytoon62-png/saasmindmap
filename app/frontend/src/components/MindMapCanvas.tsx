@@ -74,6 +74,8 @@ const EDGE_MARGIN = 40;
 const FIT_MARGIN = 48;
 const MIN_ZOOM = 0.2;
 const MAX_ZOOM = 3;
+/** Extra SVG-space margin rendered around the viewport so panning feels seamless. */
+const CULL_MARGIN = 400;
 /** Room reserved at the bottom of exports for the website stamp. */
 const EXPORT_FOOTER_HEIGHT = 46;
 
@@ -240,6 +242,10 @@ export const MindMapCanvas = forwardRef<MindMapCanvasHandle, MindMapCanvasProps>
     const panStartRef = useRef({ x: 0, y: 0 });
     const pinchDistance = useRef<number | null>(null);
     const pinchCenter = useRef<{ x: number; y: number } | null>(null);
+    // Viewport culling: SVG-space bounds currently rendered (null = render all).
+    const cullBoundsRef = useRef<{ minX: number; maxX: number; minY: number; maxY: number } | null>(null);
+    const cullChangedRef = useRef(false);
+    const [cullTick, setCullTick] = useState(0);
 
     // Drag state
     const [draggingNodeId, setDraggingNodeId] = useState<string | null>(null);
@@ -253,11 +259,47 @@ export const MindMapCanvas = forwardRef<MindMapCanvasHandle, MindMapCanvasProps>
     const longPressTriggered = useRef(false);
     const longPressStartPos = useRef<{ x: number; y: number } | null>(null);
 
+    // SVG-space bounds of the current viewport (no margin).
+    const getViewportBounds = useCallback(() => {
+      const container = containerRef.current;
+      if (!container) return null;
+      const w = container.clientWidth;
+      const h = container.clientHeight;
+      if (!w || !h) return null;
+      const z = zoomRef.current || 1;
+      const p = panRef.current;
+      return {
+        minX: (0 - p.x) / z,
+        maxX: (w - p.x) / z,
+        minY: (0 - p.y) / z,
+        maxY: (h - p.y) / z,
+      };
+    }, []);
+
+    // Re-center the rendered region around the current viewport (with margin)
+    // only when the viewport has moved out of the previously rendered region.
+    const refreshCulling = useCallback(() => {
+      const vp = getViewportBounds();
+      if (!vp) return;
+      const prev = cullBoundsRef.current;
+      if (prev && vp.minX >= prev.minX && vp.maxX <= prev.maxX && vp.minY >= prev.minY && vp.maxY <= prev.maxY) {
+        return;
+      }
+      cullBoundsRef.current = {
+        minX: vp.minX - CULL_MARGIN,
+        maxX: vp.maxX + CULL_MARGIN,
+        minY: vp.minY - CULL_MARGIN,
+        maxY: vp.maxY + CULL_MARGIN,
+      };
+      cullChangedRef.current = true;
+    }, [getViewportBounds]);
+
     // Apply zoom/pan by writing the transform directly to the DOM (no React
     // re-render), coalesced to one write per frame with requestAnimationFrame.
     const applyViewTransform = useCallback((nextZoom: number, nextPan: { x: number; y: number }) => {
       zoomRef.current = nextZoom;
       panRef.current = nextPan;
+      refreshCulling();
       if (rafIdRef.current == null) {
         rafIdRef.current = requestAnimationFrame(() => {
           rafIdRef.current = null;
@@ -265,18 +307,31 @@ export const MindMapCanvas = forwardRef<MindMapCanvasHandle, MindMapCanvasProps>
           if (g) {
             g.setAttribute("transform", `translate(${panRef.current.x}, ${panRef.current.y}) scale(${zoomRef.current})`);
           }
+          if (cullChangedRef.current) {
+            cullChangedRef.current = false;
+            setCullTick((t) => t + 1);
+          }
         });
       }
-    }, []);
+    }, [refreshCulling]);
 
     useEffect(() => {
+      const onResize = () => {
+        refreshCulling();
+        if (cullChangedRef.current) {
+          cullChangedRef.current = false;
+          setCullTick((t) => t + 1);
+        }
+      };
+      window.addEventListener("resize", onResize);
       return () => {
+        window.removeEventListener("resize", onResize);
         if (rafIdRef.current != null) {
           cancelAnimationFrame(rafIdRef.current);
           rafIdRef.current = null;
         }
       };
-    }, []);
+    }, [refreshCulling]);
 
     // Live text of the node being edited so the box resizes while typing.
     const textOf = useCallback(
@@ -473,7 +528,28 @@ export const MindMapCanvas = forwardRef<MindMapCanvasHandle, MindMapCanvasProps>
       },
     }));
 
-    const findPosition = (id: string) => positions.find((p) => p.id === id);
+    const positionMap = useMemo(() => {
+      const map = new Map<string, NodePosition>();
+      for (const p of positions) map.set(p.id, p);
+      return map;
+    }, [positions]);
+
+    const findPosition = (id: string) => positionMap.get(id);
+
+    // Current rendered region (SVG space). cullTick is bumped by refreshCulling
+    // to force a re-render when this region changes.
+    const cullBounds = cullBoundsRef.current;
+    void cullTick;
+
+    const isNodeVisible = (pos: NodePosition): boolean => {
+      if (!cullBounds) return true;
+      return !(
+        pos.x + pos.width < cullBounds.minX ||
+        pos.x > cullBounds.maxX ||
+        pos.y + pos.height < cullBounds.minY ||
+        pos.y > cullBounds.maxY
+      );
+    };
 
     /** Pointer coordinates relative to the canvas box (sidebar-safe). */
     const toLocalPoint = useCallback((clientX: number, clientY: number) => {
@@ -583,27 +659,29 @@ export const MindMapCanvas = forwardRef<MindMapCanvasHandle, MindMapCanvasProps>
         const childPos = findPosition(child.id);
         if (!childPos) continue;
 
-        const startX = isRTLLayout
-          ? parentPos.x - PLUS_BUTTON_RADIUS * 4 - 12
-          : parentPos.x + parentPos.width + PLUS_BUTTON_RADIUS * 4 + 12;
-        const startY = parentPos.y + parentPos.height / 2;
-        const endX = isRTLLayout ? childPos.x + childPos.width : childPos.x;
-        const endY = childPos.y + childPos.height / 2;
-        const midX = (startX + endX) / 2;
+        if (isNodeVisible(childPos)) {
+          const startX = isRTLLayout
+            ? parentPos.x - PLUS_BUTTON_RADIUS * 4 - 12
+            : parentPos.x + parentPos.width + PLUS_BUTTON_RADIUS * 4 + 12;
+          const startY = parentPos.y + parentPos.height / 2;
+          const endX = isRTLLayout ? childPos.x + childPos.width : childPos.x;
+          const endY = childPos.y + childPos.height / 2;
+          const midX = (startX + endX) / 2;
 
-        const depth = getNodeDepth(root, child.id);
-        const color = resolveNodeColor(child, depth);
+          const depth = getNodeDepth(root, child.id);
+          const color = resolveNodeColor(child, depth);
 
-        lines.push(
-          <path
-            key={`${node.id}-${child.id}`}
-            d={`M ${startX} ${startY} C ${midX} ${startY}, ${midX} ${endY}, ${endX} ${endY}`}
-            fill="none"
-            stroke={color}
-            strokeWidth={2}
-            strokeOpacity={0.4}
-          />
-        );
+          lines.push(
+            <path
+              key={`${node.id}-${child.id}`}
+              d={`M ${startX} ${startY} C ${midX} ${startY}, ${midX} ${endY}, ${endX} ${endY}`}
+              fill="none"
+              stroke={color}
+              strokeWidth={2}
+              strokeOpacity={0.4}
+            />
+          );
+        }
 
         lines.push(...renderConnections(child));
       }
@@ -701,6 +779,17 @@ export const MindMapCanvas = forwardRef<MindMapCanvasHandle, MindMapCanvasProps>
       const elements: JSX.Element[] = [];
       const pos = findPosition(node.id);
       if (!pos) return elements;
+
+      if (!isNodeVisible(pos)) {
+        // Off-screen node: skip its own rendering, but still render any
+        // visible descendants.
+        if (!node.collapsed) {
+          for (const child of node.children) {
+            elements.push(...renderNodes(child));
+          }
+        }
+        return elements;
+      }
 
       const depth = getNodeDepth(root, node.id);
       const color = resolveNodeColor(node, depth);
