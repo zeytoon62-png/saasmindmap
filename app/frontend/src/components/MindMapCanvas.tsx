@@ -227,14 +227,14 @@ function normalizeUrl(url: string): string {
 
 export const MindMapCanvas = forwardRef<MindMapCanvasHandle, MindMapCanvasProps>(
   ({ root, selectedNodeId, editingNodeId, isRTL: isRTLLayout, labels, onSelectNode, onStartEdit, onFinishEdit, onAddChild, onReparentNode, onToggleCollapse, readOnly = false }, ref) => {
-    const [zoom, setZoom] = useState(1);
-    const [pan, setPan] = useState({ x: EDGE_MARGIN, y: EDGE_MARGIN });
     const [isPanning, setIsPanning] = useState(false);
     const [editText, setEditText] = useState("");
 
     const svgRef = useRef<SVGSVGElement>(null);
     const containerRef = useRef<HTMLDivElement>(null);
     const editInputRef = useRef<HTMLTextAreaElement>(null);
+    const transformGroupRef = useRef<SVGGElement>(null);
+    const rafIdRef = useRef<number | null>(null);
     const zoomRef = useRef(1);
     const panRef = useRef({ x: EDGE_MARGIN, y: EDGE_MARGIN });
     const panStartRef = useRef({ x: 0, y: 0 });
@@ -253,13 +253,30 @@ export const MindMapCanvas = forwardRef<MindMapCanvasHandle, MindMapCanvasProps>
     const longPressTriggered = useRef(false);
     const longPressStartPos = useRef<{ x: number; y: number } | null>(null);
 
-    useEffect(() => {
-      zoomRef.current = zoom;
-    }, [zoom]);
+    // Apply zoom/pan by writing the transform directly to the DOM (no React
+    // re-render), coalesced to one write per frame with requestAnimationFrame.
+    const applyViewTransform = useCallback((nextZoom: number, nextPan: { x: number; y: number }) => {
+      zoomRef.current = nextZoom;
+      panRef.current = nextPan;
+      if (rafIdRef.current == null) {
+        rafIdRef.current = requestAnimationFrame(() => {
+          rafIdRef.current = null;
+          const g = transformGroupRef.current;
+          if (g) {
+            g.setAttribute("transform", `translate(${panRef.current.x}, ${panRef.current.y}) scale(${zoomRef.current})`);
+          }
+        });
+      }
+    }, []);
 
     useEffect(() => {
-      panRef.current = pan;
-    }, [pan]);
+      return () => {
+        if (rafIdRef.current != null) {
+          cancelAnimationFrame(rafIdRef.current);
+          rafIdRef.current = null;
+        }
+      };
+    }, []);
 
     // Live text of the node being edited so the box resizes while typing.
     const textOf = useCallback(
@@ -304,11 +321,8 @@ export const MindMapCanvas = forwardRef<MindMapCanvasHandle, MindMapCanvasProps>
 
     const resetView = useCallback(() => {
       const next = computeInitialPan();
-      zoomRef.current = 1;
-      panRef.current = next;
-      setZoom(1);
-      setPan(next);
-    }, [computeInitialPan]);
+      applyViewTransform(1, next);
+    }, [computeInitialPan, applyViewTransform]);
 
     /** Scale and centre so the entire map fits inside the visible viewport. */
     const fitToScreen = useCallback(() => {
@@ -334,11 +348,8 @@ export const MindMapCanvas = forwardRef<MindMapCanvasHandle, MindMapCanvasProps>
       const nextY = viewHeight / 2 - ((contentMinY + contentMaxY) / 2) * nextZoom;
       if (!Number.isFinite(nextX) || !Number.isFinite(nextY)) return;
 
-      zoomRef.current = nextZoom;
-      panRef.current = { x: nextX, y: nextY };
-      setZoom(nextZoom);
-      setPan({ x: nextX, y: nextY });
-    }, [contentMinX, contentMaxX, contentMinY, contentMaxY]);
+      applyViewTransform(nextZoom, { x: nextX, y: nextY });
+    }, [contentMinX, contentMaxX, contentMinY, contentMaxY, applyViewTransform]);
 
     // Initial placement and re-placement when the reading direction flips.
     useEffect(() => {
@@ -418,10 +429,7 @@ export const MindMapCanvas = forwardRef<MindMapCanvasHandle, MindMapCanvasProps>
           x: viewWidth / 2 - nodeCenterX * nextZoom,
           y: viewHeight / 2 - nodeCenterY * nextZoom,
         };
-        zoomRef.current = nextZoom;
-        panRef.current = nextPan;
-        setZoom(nextZoom);
-        setPan(nextPan);
+        applyViewTransform(nextZoom, nextPan);
       },
       exportToSvgString: () => {
         const built = buildExportSvg();
@@ -497,11 +505,8 @@ export const MindMapCanvas = forwardRef<MindMapCanvasHandle, MindMapCanvasProps>
       const nextY = anchorY - (anchorY - prevPan.y) * ratio;
       if (!Number.isFinite(nextX) || !Number.isFinite(nextY)) return;
 
-      zoomRef.current = nextZoom;
-      panRef.current = { x: nextX, y: nextY };
-      setZoom(nextZoom);
-      setPan({ x: nextX, y: nextY });
-    }, []);
+      applyViewTransform(nextZoom, { x: nextX, y: nextY });
+    }, [applyViewTransform]);
 
     const zoomFromButton = useCallback((factor: number) => {
       const rect = containerRef.current?.getBoundingClientRect();
@@ -512,9 +517,8 @@ export const MindMapCanvas = forwardRef<MindMapCanvasHandle, MindMapCanvasProps>
       const prev = panRef.current;
       const next = { x: prev.x + dx, y: prev.y + dy };
       if (!Number.isFinite(next.x) || !Number.isFinite(next.y)) return;
-      panRef.current = next;
-      setPan(next);
-    }, []);
+      applyViewTransform(zoomRef.current, next);
+    }, [applyViewTransform]);
 
     const getDescendantIds = useCallback((node: MindMapNode, targetId: string): string[] => {
       if (node.id === targetId) {
@@ -1044,8 +1048,7 @@ export const MindMapCanvas = forwardRef<MindMapCanvasHandle, MindMapCanvasProps>
       } else if (isPanning) {
         const local = toLocalPoint(e.clientX, e.clientY);
         const next = { x: local.x - panStartRef.current.x, y: local.y - panStartRef.current.y };
-        panRef.current = next;
-        setPan(next);
+        applyViewTransform(zoomRef.current, next);
       }
     };
 
@@ -1094,8 +1097,7 @@ export const MindMapCanvas = forwardRef<MindMapCanvasHandle, MindMapCanvasProps>
         } else if (isPanning) {
           const local = toLocalPoint(e.touches[0].clientX, e.touches[0].clientY);
           const next = { x: local.x - panStartRef.current.x, y: local.y - panStartRef.current.y };
-          panRef.current = next;
-          setPan(next);
+          applyViewTransform(zoomRef.current, next);
         }
       }
     };
@@ -1164,7 +1166,7 @@ export const MindMapCanvas = forwardRef<MindMapCanvasHandle, MindMapCanvasProps>
             </filter>
           </defs>
           <rect data-bg="true" x="0" y="0" width="100%" height="100%" fill="transparent" />
-          <g transform={`translate(${pan.x}, ${pan.y}) scale(${zoom})`}>
+          <g ref={transformGroupRef} transform={`translate(${EDGE_MARGIN}, ${EDGE_MARGIN}) scale(1)`}>
             {renderConnections(root)}
             {renderDragConnection()}
             {renderNodes(root)}
