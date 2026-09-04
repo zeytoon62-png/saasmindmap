@@ -638,46 +638,20 @@ async def create_share_link(
     data: ShareProjectRequest,
     db: AsyncSession = Depends(get_db),
 ):
-    """Create a unique share link for a mind map project"""
-    import httpx
-    from services.storage import StorageService
+    """Create a unique share link for a mind map project."""
     from services.shared_maps import SharedMapsService
-    from schemas.storage import FileUpDownRequest
 
     # Validate expiry: min 1 month, max 36 months (3 years)
     expiry_months = max(1, min(36, data.expiry_months))
 
-    # Upload file data to object storage
-    import secrets as sec_mod
-    file_token = sec_mod.token_hex(16)
-    object_key = f"shared-maps/{file_token}.json"
-
-    storage = StorageService()
-    upload_req = FileUpDownRequest(bucket_name="shared-maps", object_key=object_key)
-    upload_resp = await storage.create_upload_url(upload_req)
-
-    if not upload_resp or not upload_resp.upload_url:
-        raise HTTPException(status_code=500, detail="Failed to get upload URL")
-
-    # Upload JSON content
-    async with httpx.AsyncClient(timeout=30) as http_client:
-        resp = await http_client.put(
-            upload_resp.upload_url,
-            content=data.file_data.encode("utf-8"),
-            headers={"Content-Type": "application/json"},
-        )
-        if resp.status_code >= 400:
-            raise HTTPException(status_code=500, detail="Upload failed")
-
-    # Create DB record
+    # Store the map JSON directly in the database (no external object storage).
     shared_service = SharedMapsService(db)
     shared = await shared_service.create_share(
-        object_key=object_key,
         expiry_months=expiry_months,
         password=data.password,
+        file_data=data.file_data,
     )
 
-    # Build share URL (frontend route)
     share_url = f"/shared/{shared.token}"
     return {"success": True, "share_url": share_url, "token": shared.token}
 
@@ -689,10 +663,7 @@ async def get_shared_map(
     db: AsyncSession = Depends(get_db),
 ):
     """Access a shared mind map by token"""
-    import httpx
-    from services.storage import StorageService
     from services.shared_maps import SharedMapsService
-    from schemas.storage import FileUpDownRequest
 
     shared_service = SharedMapsService(db)
     shared = await shared_service.get_by_token(token)
@@ -718,22 +689,7 @@ async def get_shared_map(
         if SharedMapsService.hash_password(password) != shared.password_hash:
             raise HTTPException(status_code=403, detail="Invalid password")
 
-    # Get download URL for the stored JSON
-    storage = StorageService()
-    download_req = FileUpDownRequest(bucket_name="shared-maps", object_key=shared.object_key)
-    download_resp = await storage.create_download_url(download_req)
-
-    if not download_resp or not download_resp.download_url:
-        raise HTTPException(status_code=500, detail="Failed to retrieve shared data")
-
-    # Fetch the JSON content
-    async with httpx.AsyncClient(timeout=30) as http_client:
-        resp = await http_client.get(download_resp.download_url)
-        if resp.status_code >= 400:
-            raise HTTPException(status_code=500, detail="Failed to download shared data")
-        file_data = resp.text
-
-    return {"needs_password": False, "has_data": True, "data": file_data}
+    return {"needs_password": False, "has_data": True, "data": shared.file_data or ""}
 
 
 @router.post("/share/cleanup")

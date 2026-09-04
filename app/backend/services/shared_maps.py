@@ -28,9 +28,10 @@ class SharedMapsService:
 
     async def create_share(
         self,
-        object_key: str,
+        object_key: str = "",
         expiry_months: int = 3,
         password: Optional[str] = None,
+        file_data: Optional[str] = None,
     ) -> Shared_maps:
         """Create a new shared map entry"""
         token = secrets.token_urlsafe(32)
@@ -39,7 +40,8 @@ class SharedMapsService:
 
         obj = Shared_maps(
             token=token,
-            object_key=object_key,
+            object_key=object_key or "",
+            file_data=file_data,
             password_hash=password_hash,
             expires_at=expires_at,
         )
